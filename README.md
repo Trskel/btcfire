@@ -1,4 +1,4 @@
-# BTCFIre
+# BTCFire
 
 ## general requirements
 
