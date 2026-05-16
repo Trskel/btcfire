@@ -20,7 +20,8 @@ Progressive disclosure: simple by default, deep when you want it.
 1. **Privacy first.** Everything runs in the browser. No server, no accounts, no telemetry. Your financial data never leaves your machine.
 2. **Honest uncertainty.** Bitcoin's future price is unknowable. BTCFire shows distributions and probabilities, never single-point predictions. The UI makes uncertainty visible, not hidden.
 3. **Speed.** Monte Carlo simulations run in Rust/WASM so results update in real time as you drag sliders. No loading spinners, no "run simulation" buttons.
-4. **Educate, don't prescribe.** The app explains what each model assumes and where it breaks down. It helps users think clearly, not sell them a narrative.
+4. **Mobile first.** The UI is designed for phones first, then scales up to tablets and desktops. Every feature must be fully usable on a 375px-wide screen. Layouts, charts, tables, and controls are all responsive — no horizontal scrolling, no hidden-on-mobile functionality.
+5. **Educate, don't prescribe.** The app explains what each model assumes and where it breaks down. It helps users think clearly, not sell them a narrative.
 
 ## What it is not
 

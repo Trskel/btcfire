@@ -31,8 +31,8 @@ Fully static. Deployable to Vercel, GitHub Pages, or any CDN.
 | **Vite**    | Build tool          | Fast HMR, native WASM support via `vite-plugin-wasm`      |
 | **React**   | UI framework        | TypeScript-first, large ecosystem                         |
 | **shadcn/ui** | Component library | Accessible, Tailwind-based, copied into codebase (no dep) |
-| **Tailwind CSS** | Styling         | Utility-first, pairs with shadcn/ui                       |
-| **Recharts** | Charts             | React-native charting, composable, good for financial data |
+| **Tailwind CSS** | Styling         | Utility-first, pairs with shadcn/ui, mobile-first breakpoints built in |
+| **Recharts** | Charts             | React-native charting, composable, responsive containers for financial data |
 
 ## Simulation engine (Rust/WASM)
 
@@ -99,6 +99,40 @@ btcfire/
 │       └── types/        # TypeScript type definitions
 └── README.md
 ```
+
+## Testing
+
+| Choice | What | Why |
+|--------|------|-----|
+| **Vitest** | Frontend test runner | Native Vite integration, fast, ESM-first, Jest-compatible API |
+| **Testing Library** | DOM assertions | `@testing-library/react` for component tests without implementation details |
+| **wasm-pack test** | Rust/WASM tests | Runs `#[cfg(test)]` modules in a headless browser or Node |
+
+Strategy:
+- **Rust unit tests**: each price model, strategy, and simulation module has `#[cfg(test)]` tests validating core math. Run via `wasm-pack test --node`.
+- **React component tests**: Vitest + Testing Library for UI behavior (renders, interactions, responsive breakpoints). Run via `npm test`.
+- **Integration**: a smoke test that loads WASM in a Vitest environment and calls exported functions end-to-end.
+- **`npm test`** at the repo root runs both Rust and React test suites.
+- No E2E browser tests (Playwright/Cypress) — the app is client-only with no backend, so component + WASM tests provide sufficient coverage.
+
+## Responsive design
+
+Mobile-first approach using Tailwind's breakpoint system:
+
+| Breakpoint | Width   | Target           |
+|------------|---------|------------------|
+| Default    | < 640px | Phones (primary) |
+| `sm`       | ≥ 640px | Large phones     |
+| `md`       | ≥ 768px | Tablets          |
+| `lg`       | ≥ 1024px| Desktops         |
+
+Principles:
+- All styles start mobile, then add complexity at larger breakpoints.
+- Charts use `ResponsiveContainer` and simplify tick labels / legends on small screens.
+- Tables switch to card/list layouts on mobile.
+- Controls stack vertically on mobile, use multi-column grid on desktop.
+- Touch targets are minimum 44×44px.
+- No horizontal scrolling at any breakpoint.
 
 ## Deployment
 

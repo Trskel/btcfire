@@ -10,8 +10,10 @@ Establish the full development pipeline: a Rust/WASM simulation crate, a React/T
 
 - **Rust/WASM crate** (`wasm/`): a minimal crate using `wasm-pack` and `wasm-bindgen` that exports at least one function (e.g., `greet(name: &str) -> String`).
 - **React/TypeScript app** (`web/`): a Vite-based React app that imports and calls the WASM module.
-- **Tailwind CSS**: installed and configured in the React app.
+- **Tailwind CSS**: installed and configured in the React app with mobile-first responsive design.
 - **shadcn/ui**: initialized with a few base components (Button, Card) to confirm the component pipeline works.
+- **Mobile-first responsive layout**: the landing page uses a single-column mobile layout by default, expanding to multi-column at larger breakpoints. Viewport meta tag configured. Touch-friendly sizing on interactive elements.
+- **Test setup**: Vitest configured for the React app with `@testing-library/react`. `wasm-pack test --node` working for Rust. A root `npm test` script runs both suites.
 - **Build pipeline**: `npm run dev` serves the app with HMR; `npm run build` produces a static bundle with WASM included.
 - **Project root files**: `.gitignore`, root-level scripts or docs as needed.
 
@@ -30,6 +32,9 @@ Establish the full development pipeline: a Rust/WASM simulation crate, a React/T
 | WASM build tool | `wasm-pack` | Generates JS/TS bindings and an npm-compatible `pkg/` output |
 | Vite WASM integration | `vite-plugin-wasm` + `vite-plugin-top-level-await` | Enables native WASM ESM imports without manual glue |
 | Component library | shadcn/ui (installed in this phase) | Foundation ready for Phase 2+; avoids re-setup later |
+| Responsive approach | Mobile-first with Tailwind breakpoints | Default styles target 375px+; `sm`/`md`/`lg` add desktop enhancements |
+| Test runner (frontend) | Vitest | Native Vite integration, fast, same transform pipeline |
+| Test runner (Rust) | `wasm-pack test --node` | Tests Rust code in WASM-compatible environment |
 
 ## Context
 

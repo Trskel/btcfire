@@ -2,7 +2,7 @@
 
 ## Merge criteria
 
-All three checks must pass before this phase can be merged to `main`.
+All five checks must pass before this phase can be merged to `main`.
 
 ### 1. WASM function callable from React
 
@@ -16,7 +16,20 @@ All three checks must pass before this phase can be merged to `main`.
 - The app loads in the browser and renders the landing page with styled shadcn/ui components.
 - Changes to React/TypeScript files trigger hot reload.
 
-### 3. Production build produces a working static bundle
+### 3. Mobile-first responsive layout
+
+- The page renders correctly at 375px viewport width with no horizontal scrolling.
+- Interactive elements (buttons, links) have at least 44×44px touch targets.
+- The layout scales gracefully to tablet (768px) and desktop (1024px+) widths.
+- The viewport meta tag is present and configured correctly.
+
+### 4. Test suites pass
+
+- `cd web && npm test` runs Vitest and all React component tests pass.
+- `cd wasm && wasm-pack test --node` runs Rust/WASM tests and all pass.
+- At least one test exists per suite (React smoke test, Rust `greet` test).
+
+### 5. Production build produces a working static bundle
 
 - `npm run build` completes without errors.
 - The `dist/` output contains the WASM binary bundled alongside the JS.
@@ -28,12 +41,18 @@ All three checks must pass before this phase can be merged to `main`.
 # Build the WASM crate
 cd wasm && wasm-pack build --target web && cd ..
 
+# Run Rust tests
+cd wasm && wasm-pack test --node && cd ..
+
 # Install and start dev server
 cd web && npm install && npm run dev
 # → Open browser, click the button, verify WASM output appears
 
+# Run React tests
+cd web && npm test
+
 # Production build
-npm run build
+cd web && npm run build
 npx serve dist
 # → Open browser, verify same behavior as dev
 ```
