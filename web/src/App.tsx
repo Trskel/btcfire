@@ -1,21 +1,10 @@
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { PriceChart } from '@/components/charts/PriceChart'
+import { useHistoricPrices } from '@/hooks/useHistoricPrices'
 
 function App() {
-  const [wasmReady, setWasmReady] = useState(false)
-  const [greeting, setGreeting] = useState<string | null>(null)
-  const [greetFn, setGreetFn] = useState<((name: string) => string) | null>(null)
-
-  useEffect(() => {
-    async function loadWasm() {
-      const wasm = await import('btcfire-wasm')
-      await wasm.default()
-      setGreetFn(() => wasm.greet)
-      setWasmReady(true)
-    }
-    loadWasm()
-  }, [])
+  const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 md:px-8 lg:px-16">
@@ -26,57 +15,70 @@ function App() {
         </p>
       </header>
 
-      <main className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <main className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>WASM Engine</CardTitle>
-            <CardDescription>
-              {wasmReady
-                ? 'Loaded and ready'
-                : 'Loading...'}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>BTC Price History</CardTitle>
+                <CardDescription>
+                  {isLoading
+                    ? 'Loading price data...'
+                    : error
+                      ? 'Failed to load'
+                      : isStale
+                        ? 'Using cached data (API unavailable)'
+                        : `${data?.length.toLocaleString()} days of data`}
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              className="min-h-[44px] w-full md:w-auto"
-              onClick={() => {
-                if (greetFn) setGreeting(greetFn('World'))
-              }}
-              disabled={!wasmReady}
-            >
-              Call WASM
-            </Button>
-            {greeting && (
-              <p className="rounded-md bg-muted p-3 font-mono text-sm break-words">
-                {greeting}
-              </p>
+          <CardContent>
+            {isLoading && (
+              <div className="flex h-[400px] items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-foreground" />
+              </div>
             )}
+            {error && (
+              <div className="flex h-[400px] flex-col items-center justify-center gap-4">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button
+                  className="min-h-[44px]"
+                  onClick={refresh}
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
+            {data && <PriceChart data={data} />}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Price Models</CardTitle>
-            <CardDescription>Coming in Phase 3</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Power Law, Stock-to-Flow, and Bitcoin24 models will project future BTC prices.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Price Models</CardTitle>
+              <CardDescription>Coming in Phase 3</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Power Law, Stock-to-Flow, and Bitcoin24 models will project future BTC prices.
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Strategies</CardTitle>
-            <CardDescription>Coming in Phase 7</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Classic FIRE, fixed percentage, guardrails, and buy-borrow-die withdrawal strategies.
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Strategies</CardTitle>
+              <CardDescription>Coming in Phase 7</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Classic FIRE, fixed percentage, guardrails, and buy-borrow-die withdrawal strategies.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   )
