@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-18
+
+- Simplify chart zoom: replace mouse-wheel/pinch zoom with slider-only time axis control
+- Add drag-to-pan on chart area when zoomed in
+- Y axis auto-scales to fit visible data range when panning/zooming
+- Remove Y-axis zoom slider in favor of automatic scaling
+- Update Phase 2 specs to reflect new zoom/pan behavior
+
 ## 2026-05-16
 
 - Add mobile-first responsive design as a core principle across all specs
