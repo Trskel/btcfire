@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 
+pub mod data;
 mod models;
 mod simulation;
 mod strategies;
