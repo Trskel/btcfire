@@ -96,16 +96,6 @@ export function PriceChart({ data }: PriceChartProps) {
       },
       dataZoom: [
         {
-          type: 'inside',
-          xAxisIndex: 0,
-          filterMode: 'none' as const,
-        },
-        {
-          type: 'inside',
-          yAxisIndex: 0,
-          filterMode: 'none' as const,
-        },
-        {
           type: 'slider',
           xAxisIndex: 0,
           bottom: 10,
@@ -113,6 +103,13 @@ export function PriceChart({ data }: PriceChartProps) {
           borderColor: 'transparent',
           fillerColor: 'rgba(247, 147, 26, 0.15)',
           handleStyle: { borderColor: '#f7931a' },
+        },
+        {
+          type: 'inside',
+          xAxisIndex: 0,
+          zoomLock: true,
+          zoomOnMouseWheel: false,
+          moveOnMouseWheel: false,
         },
       ],
       animation: false,
@@ -129,6 +126,7 @@ export function PriceChart({ data }: PriceChartProps) {
     if (instance) {
       instance.dispatchAction({
         type: 'dataZoom',
+        dataZoomIndex: 0,
         start: 0,
         end: 100,
       })

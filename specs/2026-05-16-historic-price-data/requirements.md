@@ -12,7 +12,7 @@ Display BTC's full price history as an interactive, zoomable chart. Establish th
 - **CoinGecko API client** (`web/src/lib/api/`): fetches daily BTC/USD prices from 2013-04-28 to present using the free `/coins/bitcoin/market_chart/range` endpoint.
 - **localStorage cache**: full price history cached with a 24-hour TTL. Stale cache served as fallback when the API is unavailable.
 - **React hook** (`useHistoricPrices`): manages loading, error, and data states for the price data pipeline.
-- **ECharts line chart**: interactive chart with log/linear Y-axis toggle, dual-axis zoom/pan (pinch-to-zoom on touch, drag-on-axis-rulers on desktop), crosshair tooltip, and reset-zoom button.
+- **ECharts line chart**: interactive chart with log/linear Y-axis toggle, slider-based zoom for the time axis (X), auto-scaling Y axis that adapts to visible data, drag-to-pan on the chart area when zoomed, crosshair tooltip, and reset-zoom button. No mouse-wheel or pinch-to-zoom — zoom is controlled via the time slider; dragging/swiping on the chart pans the view.
 - **Mobile-first responsive layout**: chart adapts to screen width with simplified labels, touch-friendly controls, and no horizontal scrolling at 375px.
 - **Tests**: Rust serde tests, Vitest tests for API client, cache layer, hook, and chart component.
 
@@ -27,7 +27,7 @@ Display BTC's full price history as an interactive, zoomable chart. Establish th
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Charting library | ECharts (`echarts` + `echarts-for-react`) | Native `dataZoom` for both-axis zoom/pan with touch support. Stacked area series will support Monte Carlo fan charts in Phase 10. Replaces Recharts from original tech stack. |
+| Charting library | ECharts (`echarts` + `echarts-for-react`) | Native `dataZoom` slider controls for both-axis zoom. Stacked area series will support Monte Carlo fan charts in Phase 10. Replaces Recharts from original tech stack. |
 | Price data API | CoinGecko free tier | No API key needed, daily granularity back to 2013, well-documented. |
 | Cache strategy | localStorage with 24h TTL | Simple, no dependencies, survives page reload. Daily refresh is sufficient for historic data. |
 | Data types in Rust | `PricePoint { timestamp_ms: i64, price_usd: f64 }` | Shared type prepares for Phases 3–5 where Rust price models will consume this data. Avoids a refactor later. |

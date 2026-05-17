@@ -35,7 +35,7 @@
 2. Create `web/src/components/charts/PriceChart.tsx`.
 3. Render a line series of historic BTC prices with a time-based X axis.
 4. Add log/linear Y-axis toggle (button or switch above the chart).
-5. Configure `dataZoom` for both axes: `inside` type for pinch-to-zoom and drag-on-chart, `slider` type for axis ruler dragging on X and Y.
+5. Configure `dataZoom` with a bottom slider for time (X). Y axis auto-scales to fit visible data (default `filterMode: 'filter'`). No mouse-wheel or pinch-to-zoom — zoom is controlled exclusively via the time slider. Dragging or swiping on the chart area pans the time range when zoomed in (via `inside` dataZoom with `zoomLock: true`).
 6. Add crosshair tooltip showing date and price on hover/touch.
 7. Add a reset-zoom button that restores the full date range and auto-scaled Y axis.
 
