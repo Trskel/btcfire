@@ -1,0 +1,119 @@
+export interface ModelPoint {
+  year: number
+  timestamp_ms: number
+  median_price_usd: number
+  band_1sigma_low: number | null
+  band_1sigma_high: number | null
+  band_2sigma_low: number | null
+  band_2sigma_high: number | null
+  band_p10: number | null
+  band_p90: number | null
+  band_p25: number | null
+  band_p75: number | null
+}
+
+export type Formulation = 'log_log' | 'power_fit' | 'custom'
+
+export type BandStyle = '1sigma' | '1sigma_2sigma' | 'custom_percentiles'
+
+export interface PowerLawConfig {
+  formulation: Formulation
+  bandStyle: BandStyle
+  customA?: number | null
+  customB?: number | null
+  projectionYears: number
+  customP10?: number | null
+  customP90?: number | null
+  customP25?: number | null
+  customP75?: number | null
+}
+
+export interface PowerLawResult {
+  points: ModelPoint[]
+  rSquared: number
+  a: number
+  b: number
+  formulationUsed: string
+}
+
+export interface ModelOverlay {
+  median: [number, number][]
+  band1SigmaLow?: [number, number][]
+  band1SigmaHigh?: [number, number][]
+  band2SigmaLow?: [number, number][]
+  band2SigmaHigh?: [number, number][]
+  bandP10?: [number, number][]
+  bandP90?: [number, number][]
+  bandP25?: [number, number][]
+  bandP75?: [number, number][]
+  todayTimestamp: number
+  formulation: string
+  rSquared: number
+}
+
+export function toModelOverlay(result: PowerLawResult): ModelOverlay {
+  const today = Date.now()
+
+  const median: [number, number][] = result.points.map((p) => [
+    p.timestamp_ms,
+    p.median_price_usd,
+  ])
+
+  const has1Sigma = result.points.some((p) => p.band_1sigma_low != null)
+  const has2Sigma = result.points.some((p) => p.band_2sigma_low != null)
+  const hasP10 = result.points.some((p) => p.band_p10 != null)
+  const hasP25 = result.points.some((p) => p.band_p25 != null)
+
+  const overlay: ModelOverlay = {
+    median,
+    todayTimestamp: today,
+    formulation: result.formulationUsed,
+    rSquared: result.rSquared,
+  }
+
+  if (has1Sigma) {
+    overlay.band1SigmaHigh = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_1sigma_high!,
+    ])
+    overlay.band1SigmaLow = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_1sigma_low!,
+    ])
+  }
+
+  if (has2Sigma) {
+    overlay.band2SigmaHigh = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_2sigma_high!,
+    ])
+    overlay.band2SigmaLow = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_2sigma_low!,
+    ])
+  }
+
+  if (hasP10) {
+    overlay.bandP10 = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_p10!,
+    ])
+    overlay.bandP90 = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_p90!,
+    ])
+  }
+
+  if (hasP25) {
+    overlay.bandP25 = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_p25!,
+    ])
+    overlay.bandP75 = result.points.map((p) => [
+      p.timestamp_ms,
+      p.band_p75!,
+    ])
+  }
+
+  return overlay
+}

@@ -1,18 +1,26 @@
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PriceChart } from '@/components/charts/PriceChart'
+import { PowerLawControls } from '@/components/controls/PowerLawControls'
+import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { useHistoricPrices } from '@/hooks/useHistoricPrices'
+import type { ModelOverlay } from '@/types/models'
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
+  const [modelOverlay, setModelOverlay] = useState<ModelOverlay | null>(null)
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 md:px-8 lg:px-16">
-      <header className="mb-6 md:mb-8">
-        <h1 className="text-2xl font-bold md:text-3xl">BTCFire</h1>
-        <p className="mt-1 text-sm text-muted-foreground md:text-base">
-          Bitcoin retirement simulator
-        </p>
+      <header className="flex items-center justify-between mb-6 md:mb-8">
+        <div>
+          <h1 className="text-2xl font-bold md:text-3xl">BTCFire</h1>
+          <p className="mt-1 text-sm text-muted-foreground md:text-base">
+            Bitcoin retirement simulator
+          </p>
+        </div>
+        <ThemeToggle />
       </header>
 
       <main className="space-y-6">
@@ -50,19 +58,37 @@ function App() {
                 </Button>
               </div>
             )}
-            {data && <PriceChart data={data} />}
+            {data && <PriceChart data={data} modelOverlay={modelOverlay} />}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Power Law Model</CardTitle>
+            <CardDescription>Configure the BTC power law price projection</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data && (
+              <PowerLawControls
+                historicData={data}
+                onModelChange={setModelOverlay}
+              />
+            )}
+            {!data && !isLoading && (
+              <p className="text-sm text-muted-foreground">Price data is required to fit the model.</p>
+            )}
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Price Models</CardTitle>
-              <CardDescription>Coming in Phase 3</CardDescription>
+              <CardTitle>More Models</CardTitle>
+              <CardDescription>Coming in Phase 4 &amp; 5</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Power Law, Stock-to-Flow, and Bitcoin24 models will project future BTC prices.
+                Stock-to-Flow and Bitcoin24 models will project future BTC prices.
               </p>
             </CardContent>
           </Card>

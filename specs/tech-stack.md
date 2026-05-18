@@ -134,6 +134,20 @@ Principles:
 - Touch targets are minimum 44×44px.
 - No horizontal scrolling at any breakpoint.
 
+## Theming
+
+The app supports light and dark themes via CSS custom properties (shadcn/ui pattern):
+
+- **Light theme**: defined in `:root` CSS block — the default.
+- **Dark theme**: defined in `.dark` CSS block — activated by adding the `dark` class to `<html>`.
+- **Theme toggle**: a sun/moon icon button in the header uses the `useTheme` hook.
+- **Persistence**: theme choice is saved to `localStorage`.
+- **System preference**: on first visit with no stored preference, the app respects `prefers-color-scheme`.
+
+Implementation:
+- `web/src/hooks/useTheme.ts` — reads/writes theme, toggles `.dark` class on `<html>`.
+- `web/src/components/controls/ThemeToggle.tsx` — renderless toggle button using `lucide-react` icons.
+
 ## Deployment
 
 - Static build: `vite build` produces a `dist/` folder.

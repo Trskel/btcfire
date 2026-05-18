@@ -7,6 +7,15 @@
 - Y axis auto-scales to fit visible data range when panning/zooming
 - Remove Y-axis zoom slider in favor of automatic scaling
 - Update Phase 2 specs to reflect new zoom/pan behavior
+- Add Phase 3 specs: Power Law price model requirements, plan, and validation
+- Implement Phase 3: Rust Power Law model with log-log fit, power fit, and custom parameter presets
+- Add confidence bands: ±1σ, ±1σ+±2σ, and custom percentiles (P10/P90, P25/P75)
+- Export model via WASM bindings (`run_power_law_wasm`)
+- Extend PriceChart with `modelOverlay` prop: median line, area-filled confidence bands, "Today" reference line
+- Add PowerLawControls component with formulation selector, confidence band selector, and projection horizon slider
+- Wire controls into App.tsx with reactive model recomputation on every parameter change
+- Add light/dark theme toggle with localStorage persistence and system preference detection
+- Document theme system in tech stack spec
 
 ## 2026-05-16
 

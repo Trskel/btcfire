@@ -53,7 +53,10 @@ export function useHistoricPrices(): UseHistoricPricesResult {
   }, [])
 
   useEffect(() => {
-    load()
+    const id = setTimeout(() => {
+      load()
+    }, 0)
+    return () => clearTimeout(id)
   }, [load])
 
   const refresh = useCallback(() => {

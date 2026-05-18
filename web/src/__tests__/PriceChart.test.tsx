@@ -14,19 +14,20 @@ vi.mock('echarts/core', () => {
   }
 })
 
-vi.mock('echarts/charts', () => ({ LineChart: {} }))
+vi.mock('echarts/charts', () => ({ LineChart: {}, CustomChart: {} }))
 vi.mock('echarts/components', () => ({
   GridComponent: {},
   TooltipComponent: {},
   DataZoomComponent: {},
   ToolboxComponent: {},
+  MarkLineComponent: {},
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
 vi.mock('echarts-for-react', async () => {
   const React = await import('react')
   return {
-    default: React.forwardRef(function MockECharts(_props: unknown, _ref: unknown) {
+    default: React.forwardRef(function MockECharts() {
       return <div data-testid="echarts-mock" />
     }),
   }
@@ -66,5 +67,20 @@ describe('PriceChart', () => {
   it('does not show reset zoom button initially', () => {
     render(<PriceChart data={sampleData} />)
     expect(screen.queryByRole('button', { name: /reset zoom/i })).not.toBeInTheDocument()
+  })
+
+  it('renders with model overlay without error', () => {
+    render(
+      <PriceChart
+        data={sampleData}
+        modelOverlay={{
+          median: [[1704067200000, 55000]],
+          todayTimestamp: Date.now(),
+          formulation: 'log_log',
+          rSquared: 0.95,
+        }}
+      />,
+    )
+    expect(screen.getByTestId('echarts-mock')).toBeInTheDocument()
   })
 })
