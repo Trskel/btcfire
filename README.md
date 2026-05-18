@@ -185,6 +185,26 @@ btcfire/
     └── vite.config.ts
 ```
 
+## 🧭 Spec-Driven Development
+
+BTCFire is built using **spec-driven development** — a methodology where each feature is fully specified before a single line of code is written. Every phase of the roadmap is documented as a trio of living spec files stored alongside the code:
+
+```
+specs/YYYY-MM-DD-feature-name/
+├── requirements.md   # What we're building, in scope / out of scope, decisions, and rationale
+├── plan.md           # Task groups, acceptance tests, and implementation order
+└── validation.md     # Merge criteria — every check that must pass before the phase ships
+```
+
+**Why this matters:**
+
+- **Decisions are explicit.** Every design choice lives in `requirements.md` with a clear rationale. There's no "why did we do it this way?" — the answer is in the repo.
+- **Scope is bounded.** Each phase has an explicit "in scope / out of scope" section. Features don't creep — future ideas go into later phases, not the current one.
+- **Merge criteria are objective.** `validation.md` lists concrete, verifiable checks (test pass, build succeeds, chart renders, mobile works at 375px). A phase either merges or it doesn't — no ambiguity.
+- **Context survives.** Anyone can pick up the project months later and understand exactly what Phase 3 was supposed to deliver, what was deliberately excluded, and what tests prove it works.
+
+This practice eliminates the most common cause of project failure: building the wrong thing because nobody wrote down what "done" looks like. The specs are the contract between intent and implementation.
+
 ## 🎯 Design Philosophy
 
 - **Honesty over hype.** Bitcoin's future is unknowable. BTCFire shows probability distributions, not confident single-point predictions buried in fine print.
