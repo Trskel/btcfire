@@ -3,13 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { PriceChart } from '@/components/charts/PriceChart'
 import { PowerLawControls } from '@/components/controls/PowerLawControls'
+import { S2FControls } from '@/components/controls/S2FControls'
+import { ModelSelector } from '@/components/controls/ModelSelector'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { useHistoricPrices } from '@/hooks/useHistoricPrices'
-import type { ModelOverlay } from '@/types/models'
+import type { ModelOverlay, ModelId } from '@/types/models'
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
   const [modelOverlay, setModelOverlay] = useState<ModelOverlay | null>(null)
+  const [activeModel, setActiveModel] = useState<ModelId>('power-law')
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 md:px-8 lg:px-16">
@@ -64,15 +67,25 @@ function App() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Power Law Model</CardTitle>
-            <CardDescription>Configure the BTC power law price projection</CardDescription>
+            <CardTitle>Price Models</CardTitle>
+            <CardDescription>Choose a model to project future BTC prices</CardDescription>
           </CardHeader>
           <CardContent>
             {data && (
-              <PowerLawControls
-                historicData={data}
-                onModelChange={setModelOverlay}
-              />
+              <ModelSelector activeModel={activeModel} onModelChange={setActiveModel}>
+                {activeModel === 'power-law' && (
+                  <PowerLawControls
+                    historicData={data}
+                    onModelChange={setModelOverlay}
+                  />
+                )}
+                {activeModel === 's2f' && (
+                  <S2FControls
+                    historicData={data}
+                    onModelChange={setModelOverlay}
+                  />
+                )}
+              </ModelSelector>
             )}
             {!data && !isLoading && (
               <p className="text-sm text-muted-foreground">Price data is required to fit the model.</p>
@@ -80,31 +93,17 @@ function App() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>More Models</CardTitle>
-              <CardDescription>Coming in Phase 4 &amp; 5</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Stock-to-Flow and Bitcoin24 models will project future BTC prices.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Strategies</CardTitle>
-              <CardDescription>Coming in Phase 7</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Classic FIRE, fixed percentage, guardrails, and buy-borrow-die withdrawal strategies.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Strategies</CardTitle>
+            <CardDescription>Coming in Phase 7</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Classic FIRE, fixed percentage, guardrails, and buy-borrow-die withdrawal strategies.
+            </p>
+          </CardContent>
+        </Card>
       </main>
     </div>
   )

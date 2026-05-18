@@ -3,44 +3,35 @@
 ## Task Group 1: Rust S2F model + tests
 
 1. Create `wasm/src/models/s2f.rs` with inline `#[cfg(test)]` module.
-2. Define `HalvingEpoch` struct: `{ start_date: NaiveDate, subsidy: f64 }`.
-3. Hardcode halving schedule as a static array:
-   - Epoch 0: 2009-01-03, 50 BTC/block
-   - Epoch 1: 2012-11-28, 25 BTC/block
-   - Epoch 2: 2016-07-09, 12.5 BTC/block
-   - Epoch 3: 2020-05-11, 6.25 BTC/block
-   - Epoch 4: 2024-04-20, 3.125 BTC/block
-   - Future epochs projected at ~4-year intervals: Epoch 5: ~2028, Epoch 6: ~2032, etc. through Epoch 10 (~2048).
-4. Implement `get_s2f_for_date(date: NaiveDate) -> f64`:
-   - Determine which halving epoch the date falls in.
-   - Compute total supply: sum of coins mined in all prior epochs plus prorated coins in the current epoch (blocks mined so far × current subsidy, or date-proportional if simpler).
-   - Compute annual issuance: current subsidy × 52,560 blocks/year.
-   - Return `total_supply / annual_issuance`.
-5. Implement `compute_s2f_values(historic_data: &[PricePoint]) -> Vec<(NaiveDate, f64)>`:
-   - For each price data point, compute S2F at that date. Return (date, s2f) pairs.
-6. Implement least-squares linear regression: given `Vec<(f64, f64)>` of (x=log10_s2f, y=log10_price) points, compute slope `a`, intercept `b`, and `R²`.
-7. Define `S2FConfig` struct: `{ projection_years: u32 }` (default 30).
-8. Define `ModelPoint { year: i32, median_price_usd: f64, band_low_usd: f64, band_high_usd: f64 }` — reuse or define in `models/mod.rs` (if Power Law already defines it, import it).
-9. Define `S2FResult { points: Vec<ModelPoint>, r_squared: f64, a: f64, b: f64 }`.
-10. Implement `run_s2f(config: &S2FConfig, historic_data: &[PricePoint]) -> Result<S2FResult, String>`:
-    - Compute S2F for each historic price point.
-    - Filter out pre-halving data points (before 2012-11-28, since S2F before the first halving is not meaningful for the model — or alternatively use all data and let regression handle it).
-    - Run `log10(S2F) ~ log10(price)` regression.
-    - For each year from genesis to `current_year + projection_years`:
-      - Compute predicted S2F at the midpoint of that year (accounting for halvings within the year).
-      - Apply the fitted model: `log10(price) = a * log10(S2F) + b`, solve for price.
-      - Compute ±1σ confidence band from residual standard deviation.
-      - If the year is in the past, also compute the actual price from historic data for validation (not used in the chart, but useful for R²).
-11. **Tests** (in `#[cfg(test)]` module):
-    - Halving epoch lookup: date 2015-01-01 returns epoch 1 (25 BTC subsidy).
-    - S2F computation: for a date in mid-2024 (epoch 4, 3.125 BTC subsidy), verify S2F matches hand-computed value. Supply ~19.7M BTC, issuance ~164k BTC/year, S2F ≈ 120.
-    - S2F doubling at halving: S2F just before and just after a halving boundary should approximately double.
-    - Regression against hardcoded sample data: given 5 hand-picked (S2F, price) pairs, verify `a` and `b` coefficients match a by-hand calculation.
-    - Projection: with known `a` and `b`, verify projected price for a future year with known S2F.
-    - Edge cases: empty historic data returns error, single data point returns degenerate fit (R² not computable).
-    - R² is between 0 and 1.
-    - Confidence bands: band_low < median_price < band_high for all projected points.
-12. Run `wasm-pack test --node` — all tests pass.
+2. Hardcode Bitcoin halving schedule: block subsidy by epoch (50, 25, 12.5, 6.25, 3.125, …) with timestamps from genesis through epoch 10 (~2048).
+3. Implement `get_s2f_for_timestamp(ts_ms: i64) -> f64`:
+   - Determine which halving epoch the timestamp falls in.
+   - Compute total supply: sum of fully-mined epoch coins + prorated blocks in the current epoch × current subsidy.
+   - Compute annual issuance: current subsidy × 52,560.
+   - Return `supply / annual_issuance`.
+4. Implement least-squares linear regression in the module (reuse pattern from power_law.rs — duplicated for module independence).
+5. Define `S2FConfig` struct: `{ projection_years: i32 }` (default 30), with serde camelCase derives.
+6. Reuse `ModelPoint` from `power_law` (import `crate::models::power_law::ModelPoint`). Populate only `±1σ` band fields; leave `±2σ` and percentile fields `None`.
+7. Define `S2FResult` struct: `{ points: Vec<ModelPoint>, r_squared: f64, a: f64, b: f64 }`, with serde camelCase derives.
+8. Implement `run_s2f(config: S2FConfig, historic_data: Vec<PricePoint>) -> Result<S2FResult, String>`:
+   - Validate inputs (non-empty, ≥2 points, non-negative projection years).
+   - Filter data to points after the first halving (≥ 2012-11-28).
+   - Compute S2F for each remaining point. Run `log10(price) ~ log10(S2F)` regression.
+   - For each year from first historic year to `current_year + projection_years`:
+     - Compute S2F at July 1 of that year.
+     - Apply fitted model to get median price.
+     - Compute ±1σ band from residual standard deviation.
+     - Push a `ModelPoint` to the result.
+   - Return `S2FResult`.
+9. **Tests** (in `#[cfg(test)]` module):
+   - S2F in each halving epoch matches hand-computed values within a tolerance range.
+   - S2F approximately doubles at halving boundaries (ratio 1.5–2.5).
+   - Regression against sample data returns positive slope and R² in [0, 1].
+   - Projection includes both historic and future years.
+   - Confidence bands are ordered: `band_low < median < band_high`.
+   - Edge cases: empty data, single point, negative projection years all return errors.
+   - S2F increases monotonically over time (blocks ~2014, 2018, 2022).
+10. Run `wasm-pack test --node` — all tests pass.
 
 ## Task Group 2: WASM bindings
 
@@ -50,54 +41,75 @@
 4. Error handling: return JS error string if deserialization fails or model fit fails.
 5. Register the export in `wasm/src/lib.rs`.
 6. Build: `wasm-pack build --target web` succeeds with no warnings.
-7. Verify in browser console: call `run_s2f_wasm` with valid inputs, confirm it returns valid JSON.
 
-## Task Group 3: Model selector tabs
+## Task Group 3: Types and shared definitions
 
-1. Create `web/src/components/controls/ModelSelector.tsx`:
-   - Displays a tab bar with one tab per available model: "Power Law", "Stock-to-Flow (S2F)".
-   - Accepts `activeModel` and `onModelChange` props.
-   - Active tab is visually highlighted (shadcn/ui Tabs component or styled divs).
-   - Below the tab bar, render the active model's controls component.
-   - Tabs have ≥44px height and full-width on mobile.
-2. Create a shared TypeScript type for model identifiers: `type ModelId = 'power-law' | 's2f'`.
-3. Define `ModelOverlay` type in `web/src/types/models.ts` if not already present (likely created in Phase 3). Ensure it supports both Power Law and S2F overlays (they share the same structure).
-4. Add a `useModel` hook or lift state to `App.tsx` that tracks `activeModel: ModelId` and the current model's result.
+1. Add `ModelId = 'power-law' | 's2f'` to `web/src/types/models.ts`.
+2. Add `modelId: ModelId` field to `ModelOverlay` interface.
+3. Add `MODEL_COLORS: Record<ModelId, string>` map: `'power-law' → '#eab308'`, `'s2f' → '#0694a2'`.
+4. Add `S2FConfig` and `S2FResult` TypeScript interfaces.
+5. Update `toModelOverlay` to accept `modelId: ModelId` as a second parameter and include it in the returned overlay.
+6. Update call sites in `PowerLawControls` (`'power-law'`) and `S2FControls` (`'s2f'`).
 
-## Task Group 4: S2F controls UI
+## Task Group 4: Visibility checkboxes + expandable controls
+
+1. Rewrite `web/src/components/controls/ModelSelector.tsx`:
+   - Accept `models: ModelEntry[]`, `visibleModels: Set<ModelId>`, `expandedModel: ModelId | null`, and toggle callbacks.
+   - Render a vertical list of model rows, each with:
+     - A checkbox to toggle visibility on the chart (≥44px touch target).
+     - A label showing the model name (full on desktop, short on mobile).
+     - A chevron button to expand/collapse the controls panel.
+   - When expanded, the model's controls render below the row header in a bordered section.
+   - Only one model's controls are expanded at a time (accordion behavior).
+   - Checked models have a subtle background highlight; unchecked appear dimmed.
+   - All interactive elements have ≥44×44px touch targets.
+2. Update `App.tsx` state:
+   - Replace `modelOverlay: ModelOverlay | null` with `modelOverlays: Record<ModelId, ModelOverlay | null>`.
+   - Add `visibleModels: Set<ModelId>` state, default `new Set(['power-law'])`.
+   - Add `expandedModel: ModelId | null` state, default `'power-law'`.
+   - Each model's controls component writes to `modelOverlays[modelId]` via its `onModelChange` callback.
+   - Pass visible overlays as an array to `PriceChart.modelOverlays`.
+3. Both controls components (`PowerLawControls`, `S2FControls`) continue to auto-compute on mount — their overlays are always kept up to date regardless of visibility.
+
+## Task Group 5: S2F controls UI
 
 1. Create `web/src/components/controls/S2FControls.tsx`:
    - Projection horizon slider: range 5–50, default 30. Numeric display next to slider. Touch-friendly (≥44px height).
    - Accepts `historicData: PricePoint[]` prop.
    - Calls WASM `run_s2f_wasm` on every slider change (reactive, no run button).
    - Exposes results via `onModelChange` callback to parent.
-2. S2F info display: show the fitted `a`, `b`, and `R²` values below the slider so users can see the regression quality.
-3. All inputs have touch-friendly sizing (min 44×44px).
-4. Controls stack vertically on mobile, full-width layout.
+   - Passes `modelId` to `toModelOverlay`.
+2. S2F info display: show the fitted `a`, `b`, and `R²` values below the slider.
+3. Brief plain-language explanation of the S2F model.
+4. All inputs have touch-friendly sizing (min 44×44px).
+5. Controls stack vertically on mobile, full-width layout.
 
-## Task Group 5: Refactor Power Law integration for tabs
+## Task Group 6: Multi-overlay PriceChart refactor
 
-1. Update `App.tsx` (or the chart page component):
-   - Add `ModelSelector` above the `PriceChart`.
-   - Track `activeModel` state, default to `'power-law'`.
-   - When `activeModel` is `'power-law'`, render `PowerLawControls` inside the tab; when `'s2f'`, render `S2FControls`.
-   - Pass whichever model's result to `PriceChart.modelOverlay`.
-   - When switching tabs, the overlay updates to show the active model.
-2. Ensure `PowerLawControls` works unchanged inside the tab wrapper (no functionality regressions).
-3. Chart clears/updates the overlay when switching models (brief transition between different model lines).
+1. Change `PriceChart` prop from `modelOverlay?: ModelOverlay | null` to `modelOverlays?: ModelOverlay[]`.
+2. Extract the single-overlay series-building logic into a reusable helper that takes a `ModelOverlay` and returns an array of ECharts series.
+3. Prefix stack names with model ID to prevent area-fill collisions: e.g., `power-law-band-1sigma`, `s2f-band-1sigma`.
+4. Prefix series names with the model's display label: e.g., "Power Law Median", "S2F ±1σ".
+5. Look up each model's color from `MODEL_COLORS[overlay.modelId]`.
+6. Render the "Today" markLine only once (using the first overlay's `todayTimestamp` — they are all the same).
+7. Show legend when `modelOverlays.length > 0`.
+8. Update tooltip formatter to show all relevant series (BTC Price + all model medians + band entries), not just a single model's.
+9. Verify: chart renders correctly with 0, 1, and 2 visible overlays. Both models' median lines and bands are distinguishable.
 
-## Task Group 6: Mobile responsiveness
+## Task Group 7: Mobile responsiveness
 
-1. `ModelSelector` tabs are full-width, horizontally scrollable or use compact labels on mobile.
-2. Each controls panel stacks vertically, full-width, no horizontal scrolling at 375px.
-3. Tab touch targets ≥44px height.
-4. Chart adjusts to available space with controls above it.
-5. Legend adapts: on mobile, model overlay entries don't overwhelm the historic price entry.
-6. Verify no horizontal scrolling at 375px viewport width.
+1. `ModelSelector` checkbox rows are full-width, comfortable to tap (≥44px height).
+2. Expand/collapse chevron button is ≥44×44px.
+3. Each controls panel stacks vertically, full-width, no horizontal scrolling at 375px.
+4. All inputs, sliders, and checkboxes have ≥44×44px touch targets.
+5. Chart fills available width; no horizontal scroll.
+6. Legend adapts: multiple model entries don't overflow at 375px.
+7. Model labels use compact text on mobile (`"Power Law"` → `"Power Law"`, `"Stock-to-Flow (S2F)"` → `"S2F"`).
 
-## Task Group 7: Building and verification
+## Task Group 8: Building and verification
 
 1. Ensure `wasm-pack build --target web` includes the S2F module.
 2. Run full build: `npm run build` produces a working static site.
 3. Run full test suite: `npm test` (runs both `wasm-pack test --node` and `cd web && npm test`).
 4. Manual verification checklist matches `validation.md`.
+5. Update `PriceChart.test.tsx` to test with 0, 1, and 2 `modelOverlays`.

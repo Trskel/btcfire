@@ -2,6 +2,16 @@
 
 ## 2026-05-18
 
+- Add Phase 4 specs: S2F price model requirements, plan, and validation
+- Implement Phase 4: classic PlanB Stock-to-Flow model in Rust (log price ~ log S2F regression)
+- Hardcode Bitcoin halving schedule for S2F computation and future projection
+- Export model via WASM bindings (`run_s2f_wasm`)
+- Add ModelSelector tabs component (Power Law | Stock-to-Flow) with responsive labels
+- Add S2FControls component with projection horizon slider and fitted parameter display
+- Wire model selector into App.tsx: switching tabs instantly swaps chart overlay
+- Reusable toModelOverlay adapter supports both PowerLawResult and S2FResult
+- Add 13 Rust unit tests for S2F epoch lookup, S2F doubling, regression, and edge cases
+
 - Simplify chart zoom: replace mouse-wheel/pinch zoom with slider-only time axis control
 - Add drag-to-pan on chart area when zoomed in
 - Y axis auto-scales to fit visible data range when panning/zooming

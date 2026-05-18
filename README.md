@@ -38,6 +38,8 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 |------|---------|
 | ✅ | Interactive BTC price history chart (ECharts, log/linear, pan/zoom) |
 | ✅ | Power Law price model (log-log fit, power fit, custom parameters) |
+| ✅ | Stock-to-Flow (S2F) price model (log price ~ log S2F regression) |
+| ✅ | Model selector tabs — switch between Power Law and S2F instantly |
 | ✅ | Configurable confidence bands (±1σ, ±2σ, custom percentiles) |
 | ✅ | WASM-powered model fitting — sub-millisecond recomputation |
 | ✅ | Full Power Law controls: formulation, band style, projection horizon slider |
@@ -45,7 +47,7 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 | ✅ | Light / dark theme with system preference detection |
 | ✅ | Mobile-first responsive design (usable at 375px) |
 | ✅ | Full test suite: Rust unit tests + React component tests + integration |
-| 🚧 | S2F and Bitcoin24 price models (Phase 4–5) |
+| 🚧 | Bitcoin24 price model (Phase 5) |
 | 🚧 | Withdrawal strategies (Phase 7–12) |
 | 🚧 | Monte Carlo engine and results dashboard (Phase 9–10) |
 | 🚧 | Scenario comparison (Phase 13) |
@@ -90,7 +92,7 @@ Monte Carlo retirement modeling requires running thousands of simulations with c
 │  │   React UI    │   │   Rust / WASM   │  │
 │  │               │   │                 │  │
 │  │ • ECharts     │◄──│ • Power Law     │  │
-│  │ • shadcn/ui   │   │ • S2F (soon)    │  │
+│  │ • shadcn/ui   │   │ • S2F           │  │
 │  │ • Tailwind    │   │ • Withdrawals   │  │
 │  │ • localStorage│   │ • Monte Carlo   │  │
 │  └───────────────┘   └─────────────────┘  │
@@ -219,7 +221,7 @@ This practice eliminates the most common cause of project failure: building the 
 | 1 | Project scaffold (Rust/WASM + React/Vite) | ✅ Done |
 | 2 | Historic BTC price data + interactive chart | ✅ Done |
 | 3 | Power Law price model + chart overlay | ✅ Done |
-| 4 | Stock-to-Flow price model | 🚧 Planned |
+| 4 | Stock-to-Flow price model | ✅ Done |
 | 5 | Bitcoin24 price model | 🚧 Planned |
 | 6 | User stack configuration | 🚧 Planned |
 | 7–8 | Withdrawal strategies (Classic FIRE, Fixed %) | 🚧 Planned |

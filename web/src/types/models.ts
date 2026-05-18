@@ -16,6 +16,8 @@ export type Formulation = 'log_log' | 'power_fit' | 'custom'
 
 export type BandStyle = '1sigma' | '1sigma_2sigma' | 'custom_percentiles'
 
+export type ModelId = 'power-law' | 's2f'
+
 export interface PowerLawConfig {
   formulation: Formulation
   bandStyle: BandStyle
@@ -36,6 +38,17 @@ export interface PowerLawResult {
   formulationUsed: string
 }
 
+export interface S2FConfig {
+  projectionYears: number
+}
+
+export interface S2FResult {
+  points: ModelPoint[]
+  rSquared: number
+  a: number
+  b: number
+}
+
 export interface ModelOverlay {
   median: [number, number][]
   band1SigmaLow?: [number, number][]
@@ -51,7 +64,7 @@ export interface ModelOverlay {
   rSquared: number
 }
 
-export function toModelOverlay(result: PowerLawResult): ModelOverlay {
+export function toModelOverlay(result: PowerLawResult | S2FResult): ModelOverlay {
   const today = Date.now()
 
   const median: [number, number][] = result.points.map((p) => [
@@ -67,7 +80,7 @@ export function toModelOverlay(result: PowerLawResult): ModelOverlay {
   const overlay: ModelOverlay = {
     median,
     todayTimestamp: today,
-    formulation: result.formulationUsed,
+    formulation: 'formulationUsed' in result ? (result as PowerLawResult).formulationUsed : 's2f',
     rSquared: result.rSquared,
   }
 

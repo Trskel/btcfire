@@ -40,6 +40,27 @@ vi.mock('btcfire-wasm', () => ({
       b: -17.3,
       formulationUsed: 'log_log',
     }),
+  run_s2f_wasm: () =>
+    Promise.resolve({
+      points: [
+        {
+          year: 2024,
+          timestamp_ms: 1704067200000,
+          median_price_usd: 55000,
+          band_1sigma_low: 10000,
+          band_1sigma_high: 300000,
+          band_2sigma_low: null,
+          band_2sigma_high: null,
+          band_p10: null,
+          band_p90: null,
+          band_p25: null,
+          band_p75: null,
+        },
+      ],
+      rSquared: 0.85,
+      a: 3.5,
+      b: 1.2,
+    }),
 }))
 
 vi.mock('@/hooks/useHistoricPrices', () => ({
@@ -99,6 +120,6 @@ describe('App', () => {
 
   it('renders Power Law controls', () => {
     render(<App />)
-    expect(screen.getByText('Power Law Model')).toBeInTheDocument()
+    expect(screen.getByText('Price Models')).toBeInTheDocument()
   })
 })
