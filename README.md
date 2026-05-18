@@ -1,16 +1,223 @@
-# BTCFire
+# BTCFire — Bitcoin Retirement Simulator
 
-## general requirements
+**Your Bitcoin. Your retirement. Your privacy.** BTCFire runs thousands of Monte Carlo simulations in your browser so you can model whether a BTC-denominated portfolio can sustain you through retirement. No servers, no accounts, no data leaves your machine.
 
-- The aim of the application is to simulate different scenarios of FIRE (finantial independence retire early) using bitcoin to help the retirees take the right decisions depending on their case and assumptions
--There will be different ways to estimate the future price of bitcoin: S2F, Power law, Microstrategy's Bitcoin24 and open to add more models in the future
-- There will be different withdraw strategies: classic fire, guardrails, buy-borrow-die
-- The user will be able to choose which price estimation model to use and configure the parameters of them.
-- The user will be able to choose which withdraw strategy to use and configure the parameters of each.
-- The application will use montecarlo simulations to calculate 1000s of scenarios for each case and display averages and success percentages of the different strategies for the parameters entered by the user.
-- The user will be able to enter his own stack configuration: initial amount of BTC, initial year for retirement, current age...
-- The application will connect to a public free API to collect the historic price of bitcoin
-- The price of bitcoin and the future estimations will be displayed in visually appealing graphs
-- The graphs will show the historical price of bitcoin, the future estimation ranges of bitcoin values, the average estimation values of bitcoin values, and the valuation of the user's stack during the lifetime. In the graphs there will be controls to select different parameters of the graph: log or linear values, select estimation model, and it will be possible to select different withdraw strategies that will show the results and allow to compare (individually selectable)
--There will also be a table showing the values per year.
--Technical details: the application should run entirely in the user's local browser, to allow privacy, but values will be stored locally from session to session. For the frontend we will use react in typescript, you can use whatever libraries or components you prefer to display graphs, css styles, etc. The "backend" will be done in rust, using wasm to be able to achieve fast speed calculating all the montecarlo simulations, maybe even in real time as the user changes the value swith sliders, and also to be run in local. It is also important to have the application serverless to be able to host it for free in vercel or github pages.
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Rust](https://img.shields.io/badge/Rust-WASM-DEA584?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+---
+
+## Why BTCFire?
+
+Traditional retirement calculators work for fiat portfolios — stocks, bonds, 401(k)s. They don't understand Bitcoin's asymmetric volatility, its historically exponential growth profile, or the implications of holding a supply-capped asset through decades of inflation. At the same time, Bitcoin-native tools tend to be trading dashboards or price prediction engines, not retirement planning platforms.
+
+BTCFire bridges that gap.
+
+It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), runs **thousands of Monte Carlo scenarios** to capture uncertainty, and tests your holdings against **different withdrawal strategies** (Classic FIRE, Guardrails, Buy-Borrow-Die). The output isn't a single number — it's a distribution of outcomes and a success probability.
+
+## How It Works
+
+<p align="center">
+  <strong>Historic BTC price</strong> → <strong>Price model projection</strong> → <strong>Monte Carlo simulation</strong> → <strong>Retirement outcome probability</strong>
+</p>
+
+1. **Fetch historic data** — BTC daily price history from a public API, cached locally.
+2. **Fit a price model** — Power Law regression, Stock-to-Flow, or configurable custom parameters, extended decades into the future with statistical confidence bands.
+3. **Define your stack** — BTC holdings, annual spending, inflation rate, retirement timeline.
+4. **Choose a withdrawal strategy** — Classic FIRE (fixed real spending), Guardrails (adaptive spending), Buy-Borrow-Die (leverage instead of selling).
+5. **Run the simulation** — Rust/WASM Monte Carlo engine runs 1,000+ scenarios in milliseconds, right in your browser.
+6. **Explore results** — fan charts, percentile bands, success rates, and year-by-year breakdowns.
+
+## ✨ Features (so far)
+
+| Done | Feature |
+|------|---------|
+| ✅ | Interactive BTC price history chart (ECharts, log/linear, pan/zoom) |
+| ✅ | Power Law price model (log-log fit, power fit, custom parameters) |
+| ✅ | Configurable confidence bands (±1σ, ±2σ, custom percentiles) |
+| ✅ | WASM-powered model fitting — sub-millisecond recomputation |
+| ✅ | Full Power Law controls: formulation, band style, projection horizon slider |
+| ✅ | Reactive model overlay on the chart — no "Run" button needed |
+| ✅ | Light / dark theme with system preference detection |
+| ✅ | Mobile-first responsive design (usable at 375px) |
+| ✅ | Full test suite: Rust unit tests + React component tests + integration |
+| 🚧 | S2F and Bitcoin24 price models (Phase 4–5) |
+| 🚧 | Withdrawal strategies (Phase 7–12) |
+| 🚧 | Monte Carlo engine and results dashboard (Phase 9–10) |
+| 🚧 | Scenario comparison (Phase 13) |
+
+## 🔒 Privacy by Design
+
+- **Everything runs client-side.** Your financial data — holdings, spending, age — never leaves your browser.
+- **No accounts, no servers, no telemetry, no analytics.** The site sends exactly two network requests: fetching historic BTC prices from a public API, and loading the static app bundle. That's it.
+- **Local storage only.** Your configuration parameters are saved to `localStorage` for convenience across sessions. You can clear them anytime.
+- **Verifiable privacy.** The entire application is static HTML/CSS/JS/WASM. You can audit the network tab in DevTools and see there's nothing phoning home.
+
+This isn't just a nice-to-have. Bitcoin retirement planning involves sensitive financial projections. Your employer, your bank, and your government have no business knowing when you plan to retire or how much bitcoin you hold.
+
+## 🧠 Tech Stack
+
+### Why Rust + WASM?
+
+Monte Carlo retirement modeling requires running thousands of simulations with compound interest calculations, price model projections, and withdrawal logic across 30–50 year time horizons. Doing this in JavaScript would create a laggy UX. Rust compiled to WebAssembly delivers **native-level performance in the browser** — results update in real time as you drag sliders.
+
+<div align="center">
+
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| **UI** | React 19 + TypeScript | Type-safe, component-based, enormous ecosystem |
+| **Styling** | Tailwind CSS v4 + shadcn/ui | Utility-first, accessible, theme-able out of the box |
+| **Charts** | ECharts | High-performance canvas rendering for financial data |
+| **Simulation** | Rust → WASM | Near-native speed for Monte Carlo, strong type safety |
+| **WASM bridge** | wasm-bindgen + serde | Type-safe JS ↔ Rust interop, zero-cost serialization |
+| **Build** | Vite + wasm-pack | Fast HMR, native WASM bundling |
+| **Testing** | Vitest + wasm-pack test | ESM-first testing for both JS and Rust |
+| **Deploy** | Static HTML/CSS/JS/WASM | Vercel or GitHub Pages, zero server cost |
+
+</div>
+
+### Architecture
+
+```
+┌──────────────────────────────────────────┐
+│               Browser                     │
+│                                           │
+│  ┌───────────────┐   ┌─────────────────┐  │
+│  │   React UI    │   │   Rust / WASM   │  │
+│  │               │   │                 │  │
+│  │ • ECharts     │◄──│ • Power Law     │  │
+│  │ • shadcn/ui   │   │ • S2F (soon)    │  │
+│  │ • Tailwind    │   │ • Withdrawals   │  │
+│  │ • localStorage│   │ • Monte Carlo   │  │
+│  └───────────────┘   └─────────────────┘  │
+│           │                               │
+│           ▼                               │
+│  ┌───────────────────┐                    │
+│  │  Public BTC API   │ (historic prices)  │
+│  └───────────────────┘                    │
+└──────────────────────────────────────────┘
+```
+
+**Zero backend. Fully static. Deployable anywhere.**
+
+## 🚀 Running Locally
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) ≥ 20
+- [Rust](https://www.rust-lang.org/) (stable) with `wasm32-unknown-unknown` target
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/) ≥ 0.12
+
+```bash
+# Install the Rust WASM target
+rustup target add wasm32-unknown-unknown
+
+# Install wasm-pack
+cargo install wasm-pack
+```
+
+### Development
+
+```bash
+# Clone and enter the project
+git clone https://github.com/YOUR_USERNAME/btcfire.git
+cd btcfire
+
+# Build the WASM module
+cd wasm && wasm-pack build --target web && cd ..
+
+# Install frontend dependencies
+cd web && npm install
+
+# Start the dev server
+npm run dev
+```
+
+The app opens at `http://localhost:5173`. Hot Module Replacement is enabled — changes to React/TypeScript code reload instantly. For Rust changes, rebuild with `wasm-pack build --target web` from the `wasm/` directory.
+
+### Testing
+
+```bash
+# Rust/WASM tests
+cd wasm && wasm-pack test --node && cd ..
+
+# Frontend tests
+cd web && npm test
+
+# Lint
+cd web && npm run lint
+```
+
+### Production build
+
+```bash
+cd wasm && wasm-pack build --target web && cd ..
+cd web && npm run build
+# Output in web/dist/ — deploy to Vercel, Netlify, or GitHub Pages
+```
+
+## 📁 Project Structure
+
+```
+btcfire/
+├── specs/                 # Project spec documents (mission, roadmap, tech stack)
+├── wasm/                  # Rust/WASM simulation engine
+│   ├── Cargo.toml
+│   └── src/
+│       ├── lib.rs         # WASM entry point + bindings
+│       ├── data/          # Price data types and parsing
+│       ├── models/        # Price models (power_law, s2f, bitcoin24)
+│       ├── strategies/    # Withdrawal strategies
+│       └── simulation/    # Monte Carlo engine
+└── web/                   # React/TypeScript frontend
+    ├── src/
+    │   ├── components/    # UI components
+    │   │   ├── ui/        # shadcn/ui primitives
+    │   │   ├── charts/    # ECharts components
+    │   │   └── controls/  # Parameter panels
+    │   ├── hooks/         # Custom React hooks
+    │   ├── lib/           # API client, cache layer, utilities
+    │   └── types/         # TypeScript type definitions
+    └── vite.config.ts
+```
+
+## 🎯 Design Philosophy
+
+- **Honesty over hype.** Bitcoin's future is unknowable. BTCFire shows probability distributions, not confident single-point predictions buried in fine print.
+- **Education over prescription.** Every model and strategy comes with plain-language explanations of its assumptions and limitations. Users make informed choices.
+- **Simplicity by default, depth on demand.** Sensible defaults work out of the box. Power users get full parameter control.
+- **Real-time feedback.** No "Run Simulation" button. Results update as you drag sliders.
+
+## 📋 Roadmap
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Project scaffold (Rust/WASM + React/Vite) | ✅ Done |
+| 2 | Historic BTC price data + interactive chart | ✅ Done |
+| 3 | Power Law price model + chart overlay | ✅ Done |
+| 4 | Stock-to-Flow price model | 🚧 Planned |
+| 5 | Bitcoin24 price model | 🚧 Planned |
+| 6 | User stack configuration | 🚧 Planned |
+| 7–8 | Withdrawal strategies (Classic FIRE, Fixed %) | 🚧 Planned |
+| 9–10 | Monte Carlo engine + Results dashboard | 🚧 Planned |
+| 11–12 | Guardrails + Buy-Borrow-Die strategies | 🚧 Planned |
+| 13 | Scenario comparison | 🚧 Planned |
+| 14–15 | Polish, education, deployment, PWA | 🚧 Planned |
+
+## ⚠️ Disclaimer
+
+BTCFire is a simulation tool for educational and planning purposes. It is **not financial advice**. Past performance of any asset does not predict future results. All price models make assumptions that may prove wrong. Cryptocurrency is volatile — you could lose everything. Consult a qualified financial advisor before making retirement decisions.
+
+## 📄 License
+
+MIT © [Your Name]
+
+---
+
+<p align="center">
+  <em>Built with Rust, React, and a healthy skepticism of financial models.</em>
+</p>
