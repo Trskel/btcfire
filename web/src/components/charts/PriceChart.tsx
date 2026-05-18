@@ -72,13 +72,20 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
         symbol: 'none',
       })
 
-      const colors = {
+      const colors: Record<string, string> = {
         log_log: '#eab308',
         power_fit: '#a855f7',
         custom: '#06b6d4',
       }
       const modelColor =
         colors[modelOverlay.formulation as keyof typeof colors] || '#eab308'
+
+      const bandColors = {
+        sigma1: modelColor,
+        sigma2: '#64748b',
+        pctInner: '#22c55e',
+        pctOuter: '#94a3b8',
+      }
 
       series.push({
         type: 'line',
@@ -111,9 +118,32 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
             showSymbol: false,
             stack: 'band-2sigma',
             lineStyle: { opacity: 0, width: 0 },
+            itemStyle: { color: bandColors.sigma2 },
             areaStyle: {
-              color: 'rgba(234, 179, 8, 0.07)',
+              color: bandColors.sigma2 + '1a',
             },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.band2SigmaLow,
+            name: '2σ Lower',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.sigma2 },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.band2SigmaHigh,
+            name: '2σ Upper',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.sigma2 },
           },
         )
       }
@@ -136,9 +166,32 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
             showSymbol: false,
             stack: 'band-1sigma',
             lineStyle: { opacity: 0, width: 0 },
+            itemStyle: { color: bandColors.sigma1 },
             areaStyle: {
-              color: 'rgba(234, 179, 8, 0.15)',
+              color: bandColors.sigma1 + '33',
             },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.band1SigmaLow,
+            name: '1σ Lower',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.sigma1 },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.band1SigmaHigh,
+            name: '1σ Upper',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.sigma1 },
           },
         )
       }
@@ -161,9 +214,32 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
             showSymbol: false,
             stack: 'band-p25',
             lineStyle: { opacity: 0, width: 0 },
+            itemStyle: { color: bandColors.pctInner },
             areaStyle: {
-              color: 'rgba(234, 179, 8, 0.15)',
+              color: bandColors.pctInner + '33',
             },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.bandP25,
+            name: 'P25',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.pctInner },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.bandP75,
+            name: 'P75',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.pctInner },
           },
         )
       }
@@ -186,9 +262,32 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
             showSymbol: false,
             stack: 'band-p10',
             lineStyle: { opacity: 0, width: 0 },
+            itemStyle: { color: bandColors.pctOuter },
             areaStyle: {
-              color: 'rgba(234, 179, 8, 0.07)',
+              color: bandColors.pctOuter + '1a',
             },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.bandP10,
+            name: 'P10',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.pctOuter },
+          },
+          {
+            type: 'line',
+            data: modelOverlay.bandP90,
+            name: 'P90',
+            showSymbol: false,
+            lineStyle: {
+              width: 1,
+              type: 'dashed',
+            },
+            itemStyle: { color: bandColors.pctOuter },
           },
         )
       }
