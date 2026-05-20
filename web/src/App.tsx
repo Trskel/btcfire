@@ -188,6 +188,12 @@ function App() {
             </p>
           </CardContent>
         </Card>
+
+        <footer className="mt-8 border-t border-border pt-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong>Disclaimer:</strong> BTCFire is a simulation tool for educational and planning purposes only. It is not financial advice. Past performance of any asset does not predict future results. All price models make assumptions that may prove wrong. Cryptocurrency is volatile — you could lose everything. Consult a qualified financial advisor before making retirement decisions.
+          </p>
+        </footer>
       </main>
     </div>
   )

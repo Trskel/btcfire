@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), wasm()],
   server: {
     fs: {
-      allow: ['..'],
+      allow: ['.', '../wasm/pkg'],
     },
   },
   resolve: {

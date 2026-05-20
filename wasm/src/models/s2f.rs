@@ -1,8 +1,11 @@
 use crate::data::PricePoint;
-use crate::models::power_law::ModelPoint;
+use crate::models::ModelPoint;
+use super::stats::{
+    current_year, first_historic_year, linear_regression, log10, pow10,
+    residual_std_dev,
+};
 use serde::{Deserialize, Serialize};
 
-const GENESIS_MS: i64 = 1_230_940_800_000;
 const BLOCKS_PER_EPOCH: f64 = 210_000.0;
 const MS_PER_BLOCK: f64 = 600_000.0;
 const BLOCKS_PER_YEAR: f64 = 52_560.0;
@@ -60,101 +63,6 @@ fn get_s2f_for_timestamp(ts_ms: i64) -> f64 {
     }
 
     supply / annual_issuance
-}
-
-fn log10(x: f64) -> f64 {
-    x.log10()
-}
-
-fn pow10(x: f64) -> f64 {
-    10.0_f64.powf(x)
-}
-
-struct RegressionResult {
-    a: f64,
-    b: f64,
-    r_squared: f64,
-    residuals: Vec<f64>,
-}
-
-fn linear_regression(xs: &[f64], ys: &[f64]) -> Option<RegressionResult> {
-    let n = xs.len() as f64;
-    if n < 2.0 {
-        return None;
-    }
-
-    let sum_x: f64 = xs.iter().sum();
-    let sum_y: f64 = ys.iter().sum();
-    let sum_xy: f64 = xs.iter().zip(ys.iter()).map(|(x, y)| x * y).sum();
-    let sum_x2: f64 = xs.iter().map(|x| x * x).sum();
-
-    let denominator = n * sum_x2 - sum_x * sum_x;
-    if denominator.abs() < 1e-15 {
-        return None;
-    }
-
-    let a = (n * sum_xy - sum_x * sum_y) / denominator;
-    let b = (sum_y - a * sum_x) / n;
-
-    let mean_y = sum_y / n;
-    let ss_res: f64 = xs
-        .iter()
-        .zip(ys.iter())
-        .map(|(x, y)| {
-            let pred = a * x + b;
-            (y - pred).powi(2)
-        })
-        .sum();
-    let ss_tot: f64 = ys.iter().map(|y| (y - mean_y).powi(2)).sum();
-
-    let r_squared = if ss_tot.abs() < 1e-15 {
-        0.0
-    } else {
-        (1.0 - ss_res / ss_tot).clamp(0.0, 1.0)
-    };
-
-    let residuals: Vec<f64> = xs
-        .iter()
-        .zip(ys.iter())
-        .map(|(x, y)| {
-            let pred = a * x + b;
-            y - pred
-        })
-        .collect();
-
-    Some(RegressionResult {
-        a,
-        b,
-        r_squared,
-        residuals,
-    })
-}
-
-fn residual_std_dev(residuals: &[f64]) -> f64 {
-    let n = residuals.len() as f64;
-    if n < 2.0 {
-        return 0.0;
-    }
-    let mean = residuals.iter().sum::<f64>() / n;
-    let variance = residuals.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / n;
-    variance.sqrt()
-}
-
-fn current_year() -> i32 {
-    let now_ms = js_sys::Date::now() as i64;
-    let days_since_epoch = (now_ms as f64 / 86_400_000.0).floor();
-    let years_since_epoch = (days_since_epoch / 365.25).floor() as i32;
-    1970 + years_since_epoch
-}
-
-fn first_historic_year(data: &[PricePoint]) -> i32 {
-    data.iter()
-        .map(|p| {
-            let days = (p.timestamp_ms - GENESIS_MS) as f64 / 86_400_000.0;
-            2009 + (days / 365.25).floor() as i32
-        })
-        .min()
-        .unwrap_or(2009)
 }
 
 fn year_midpoint_timestamp(year: i32) -> i64 {

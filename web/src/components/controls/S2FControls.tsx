@@ -59,7 +59,7 @@ export function S2FControls({
     if (hasEnoughData) {
       const id = setTimeout(() => {
         runModel()
-      }, 0)
+      }, 300)
       return () => clearTimeout(id)
     }
   }, [hasEnoughData, runModel])
