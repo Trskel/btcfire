@@ -2,7 +2,7 @@
 
 ## Merge criteria
 
-All ten checks must pass before this phase can be merged to `main`.
+All eleven checks must pass before this phase can be merged to `main`.
 
 ### 1. S2F model computes correct S2F ratios
 
@@ -26,19 +26,20 @@ All ten checks must pass before this phase can be merged to `main`.
 - The result object contains `points`, `r_squared`, `a`, `b`.
 - `wasm-pack build --target web` succeeds with no errors or warnings.
 
-### 4. Visibility checkboxes work
+### 4. Visibility checkboxes work (with auto-expand)
 
 - `ModelSelector` renders a list of model rows: "Power Law" and "Stock-to-Flow (S2F)".
 - Each row has a checkbox. The Power Law checkbox is checked by default.
 - Toggling a checkbox adds/removes the model's overlay from the chart without recomputing.
 - Multiple models can be checked at once — both overlays render on the chart simultaneously.
+- **Checking** a model's visibility checkbox automatically expands its controls panel if it was collapsed.
 
 ### 5. Expand/collapse controls work
 
 - Each model row has a chevron button to expand/collapse its controls panel.
 - Clicking the chevron toggles the controls panel visibility below the row.
 - Only one model's controls are expanded at a time (expanding one collapses the other).
-- When expanded, the controls panel shows the full model configuration (Power Law: formulation, bands, horizon; S2F: horizon slider).
+- When expanded, the controls panel shows the model-specific configuration (Power Law: formulation, bands; S2F: fitted parameters and model explanation). The shared projection horizon slider is above the model list, not inside individual panels.
 - The expand/collapse transition is smooth and does not cause layout jumps.
 
 ### 6. Multiple overlays render correctly on the chart
@@ -51,11 +52,13 @@ All ten checks must pass before this phase can be merged to `main`.
 - Zoom and pan controls affect all series together.
 - Checking/unchecking a model adds/removes all its series from the chart instantly.
 
-### 7. S2F controls change the overlay in real time
+### 7. Shared projection horizon works
 
-- When S2F is expanded, changing its projection horizon slider updates the S2F overlay immediately.
-- The slider range is 5–50, default 30.
-- Fitted `a`, `b`, and `R²` values are displayed below the slider.
+- A single projection horizon slider (5–50, default 30) is rendered above the model list in the "Price Models" card.
+- Changing the slider updates **all models'** projections simultaneously — both Power Law and S2F overlays update on the chart.
+- The shared value is passed to each model's WASM call via the `projectionYears` prop.
+- Individual model controls panels do not contain their own projection horizon sliders.
+- Fitted `a`, `b`, and `R²` values are displayed in each model's expanded panel.
 
 ### 8. Power Law model still works (no regressions)
 
@@ -113,22 +116,20 @@ npm test
 # Start dev server and verify manually
 cd web && npm run dev
 # → Chart loads with BTC price history (Phase 2).
-# → Model visibility list is visible above the chart: "Power Law" (checked) and "S2F" (unchecked).
-# → Power Law is expanded by default — full controls visible.
+# → Shared projection horizon slider is visible above the model list (default 30y).
+# → Model visibility list: "Power Law" (checked, expanded) and "S2F" (unchecked, collapsed).
 # → Power Law overlay renders on chart (amber median line + bands).
-# → Check the S2F checkbox. Power Law still visible, S2F appears on chart (teal).
+# → Check the S2F checkbox. S2F controls panel auto-expands, and S2F appears on chart (teal).
 # → Both models' median lines and bands are distinguishable.
-# → Uncheck Power Law. Only S2F remains on chart.
-# → Expand S2F. S2F controls panel opens (Power Law collapses).
-# → Change S2F projection horizon slider — S2F overlay updates immediately.
-# → Expand Power Law again. Power Law controls reappear, S2F panel collapses.
+# → Change the shared projection horizon slider — both models' overlays update simultaneously.
+# → Uncheck Power Law. Only S2F remains on chart. Power Law controls stay collapsed.
+# → Collapse S2F controls panel. Expand Power Law again.
 # → Test at 375px viewport: checkbox rows are full-width, controls stack, no horizontal scrolling.
-```
 
 ## What "done" looks like
 
-The app shows the historic BTC price chart from Phase 2. Below it, a model list with two rows: "Power Law" (checked, expanded) and "Stock-to-Flow (S2F)" (unchecked, collapsed). The chart shows the Power Law overlay — an amber median line (dashed into the future) with ±1σ confidence bands.
+The app shows the historic BTC price chart from Phase 2. Below it, the "Price Models" card has a shared projection horizon slider (5–50 years, default 30) at the top. Below that, a model list with two rows: "Power Law" (checked, expanded) and "Stock-to-Flow (S2F)" (unchecked, collapsed). The chart shows the Power Law overlay — an amber median line (dashed into the future) with ±1σ confidence bands.
 
-Checking the S2F checkbox adds a teal median line and its ±1σ bands to the chart, visible alongside the Power Law overlay. Both models' projections are clearly distinguishable by color. Expanding/collapsing a model's row shows or hides its controls panel. Only one panel is open at a time.
+Checking the S2F checkbox auto-expands its controls panel and adds a teal median line with its ±1σ bands to the chart, visible alongside Power Law. Both models' projections are clearly distinguishable by color. Changing the shared projection horizon slider updates all visible models' projections simultaneously.
 
-Each model's controls work independently: Power Law has formulation, band style, and projection horizon; S2F has projection horizon. Changing any control updates that model's chart overlay instantly. All controls and the model list are fully usable on a phone screen.
+Each model's controls work independently: Power Law has formulation and band style; S2F shows fitted parameters. Expanding/collapsing a model's row shows or hides its controls panel. Only one panel is open at a time. All controls and the model list are fully usable on a phone screen.

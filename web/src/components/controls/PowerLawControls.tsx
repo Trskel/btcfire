@@ -16,16 +16,17 @@ async function ensureWasm() {
 
 interface PowerLawControlsProps {
   historicData: PricePoint[]
+  projectionYears: number
   onModelChange: (overlay: ModelOverlay | null) => void
 }
 
 export function PowerLawControls({
   historicData,
+  projectionYears,
   onModelChange,
 }: PowerLawControlsProps) {
   const [formulation, setFormulation] = useState<Formulation>('log_log')
   const [bandStyle, setBandStyle] = useState<BandStyle>('1sigma')
-  const [projectionYears, setProjectionYears] = useState(30)
   const [customA, setCustomA] = useState('5.84')
   const [customB, setCustomB] = useState('-17.3')
   const [customP10, setCustomP10] = useState('10')
@@ -66,7 +67,7 @@ export function PowerLawControls({
       setResult(rawResult)
       setError(null)
 
-      const overlay = toModelOverlay(rawResult)
+      const overlay = toModelOverlay(rawResult, 'power-law')
       onModelChange(overlay)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Model error')
@@ -215,20 +216,6 @@ export function PowerLawControls({
             </div>
           </>
         )}
-
-        <div className="w-full sm:w-48">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Projection Horizon: {projectionYears}y
-          </label>
-          <input
-            type="range"
-            min={5}
-            max={50}
-            value={projectionYears}
-            onChange={(e) => setProjectionYears(parseInt(e.target.value))}
-            className="min-h-[44px] w-full"
-          />
-        </div>
       </div>
 
       {error && (

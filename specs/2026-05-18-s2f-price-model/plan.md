@@ -63,23 +63,25 @@
    - Only one model's controls are expanded at a time (accordion behavior).
    - Checked models have a subtle background highlight; unchecked appear dimmed.
    - All interactive elements have ≥44×44px touch targets.
-2. Update `App.tsx` state:
-   - Replace `modelOverlay: ModelOverlay | null` with `modelOverlays: Record<ModelId, ModelOverlay | null>`.
-   - Add `visibleModels: Set<ModelId>` state, default `new Set(['power-law'])`.
-   - Add `expandedModel: ModelId | null` state, default `'power-law'`.
-   - Each model's controls component writes to `modelOverlays[modelId]` via its `onModelChange` callback.
-   - Pass visible overlays as an array to `PriceChart.modelOverlays`.
-3. Both controls components (`PowerLawControls`, `S2FControls`) continue to auto-compute on mount — their overlays are always kept up to date regardless of visibility.
+ 2. Update `App.tsx` state:
+    - Replace `modelOverlay: ModelOverlay | null` with `modelOverlays: Record<ModelId, ModelOverlay | null>`.
+    - Add `visibleModels: Set<ModelId>` state, default `new Set(['power-law'])`.
+    - Add `expandedModel: ModelId | null` state, default `'power-law'`.
+    - Add `projectionYears: number` state, default 30. Render a shared projection horizon slider above the model list in the card.
+    - Checking a model's visibility checkbox auto-expands its controls panel (`handleToggleVisibility` also calls `setExpandedModel` when adding to the set).
+    - Each model's controls component receives `projectionYears` as a prop (but not `onProjectionChange` — the shared slider above owns the change handler).
+    - Pass visible overlays as an array to `PriceChart.modelOverlays`.
+ 3. Both controls components (`PowerLawControls`, `S2FControls`) continue to auto-compute on mount — their overlays are always kept up to date regardless of visibility. Both accept `projectionYears` as a prop and remove their individual projection horizon sliders (the shared slider in the card header owns this control).
 
 ## Task Group 5: S2F controls UI
 
 1. Create `web/src/components/controls/S2FControls.tsx`:
-   - Projection horizon slider: range 5–50, default 30. Numeric display next to slider. Touch-friendly (≥44px height).
-   - Accepts `historicData: PricePoint[]` prop.
-   - Calls WASM `run_s2f_wasm` on every slider change (reactive, no run button).
+   - Accepts `historicData: PricePoint[]` and `projectionYears: number` props.
+   - Calls WASM `run_s2f_wasm` reactively on every change to `projectionYears` (reactive, no run button).
    - Exposes results via `onModelChange` callback to parent.
    - Passes `modelId` to `toModelOverlay`.
-2. S2F info display: show the fitted `a`, `b`, and `R²` values below the slider.
+   - No individual projection horizon slider — the shared slider in the parent card controls all models.
+2. S2F info display: show the fitted `a`, `b`, and `R²` values.
 3. Brief plain-language explanation of the S2F model.
 4. All inputs have touch-friendly sizing (min 44×44px).
 5. Controls stack vertically on mobile, full-width layout.

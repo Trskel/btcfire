@@ -16,14 +16,15 @@ async function ensureWasm() {
 
 interface S2FControlsProps {
   historicData: PricePoint[]
+  projectionYears: number
   onModelChange: (overlay: ModelOverlay | null) => void
 }
 
 export function S2FControls({
   historicData,
+  projectionYears,
   onModelChange,
 }: S2FControlsProps) {
-  const [projectionYears, setProjectionYears] = useState(30)
   const [result, setResult] = useState<S2FResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,7 +45,7 @@ export function S2FControls({
       setResult(rawResult)
       setError(null)
 
-      const overlay = toModelOverlay(rawResult)
+      const overlay = toModelOverlay(rawResult, 's2f')
       onModelChange(overlay)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Model error')
@@ -65,22 +66,6 @@ export function S2FControls({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="w-full sm:w-48">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Projection Horizon: {projectionYears}y
-          </label>
-          <input
-            type="range"
-            min={5}
-            max={50}
-            value={projectionYears}
-            onChange={(e) => setProjectionYears(parseInt(e.target.value))}
-            className="min-h-[44px] w-full"
-          />
-        </div>
-      </div>
-
       {error && (
         <p className="text-xs text-destructive">{error}</p>
       )}

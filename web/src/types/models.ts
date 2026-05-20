@@ -50,6 +50,7 @@ export interface S2FResult {
 }
 
 export interface ModelOverlay {
+  modelId: ModelId
   median: [number, number][]
   band1SigmaLow?: [number, number][]
   band1SigmaHigh?: [number, number][]
@@ -64,7 +65,17 @@ export interface ModelOverlay {
   rSquared: number
 }
 
-export function toModelOverlay(result: PowerLawResult | S2FResult): ModelOverlay {
+export const MODEL_COLORS: Record<ModelId, string> = {
+  'power-law': '#eab308',
+  's2f': '#0694a2',
+}
+
+export const MODEL_LABELS: Record<ModelId, string> = {
+  'power-law': 'Power Law',
+  's2f': 'S2F',
+}
+
+export function toModelOverlay(result: PowerLawResult | S2FResult, modelId: ModelId): ModelOverlay {
   const today = Date.now()
 
   const median: [number, number][] = result.points.map((p) => [
@@ -78,6 +89,7 @@ export function toModelOverlay(result: PowerLawResult | S2FResult): ModelOverlay
   const hasP25 = result.points.some((p) => p.band_p25 != null)
 
   const overlay: ModelOverlay = {
+    modelId,
     median,
     todayTimestamp: today,
     formulation: 'formulationUsed' in result ? (result as PowerLawResult).formulationUsed : 's2f',

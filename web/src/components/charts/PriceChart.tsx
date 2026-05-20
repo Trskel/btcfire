@@ -12,6 +12,7 @@ import {
 import { CanvasRenderer } from 'echarts/renderers'
 import type { PricePoint } from '@/types/price'
 import type { ModelOverlay } from '@/types/models'
+import { MODEL_COLORS, MODEL_LABELS } from '@/types/models'
 import { Button } from '@/components/ui/button'
 
 echarts.use([
@@ -25,12 +26,196 @@ echarts.use([
   CanvasRenderer,
 ])
 
-interface PriceChartProps {
-  data: PricePoint[]
-  modelOverlay?: ModelOverlay | null
+function buildOverlaySeries(
+  overlay: ModelOverlay,
+  modelLabel: string,
+  modelColor: string,
+): Record<string, unknown>[] {
+  const id = overlay.modelId
+  const series: Record<string, unknown>[] = []
+
+  series.push({
+    type: 'line',
+    data: overlay.median,
+    name: `${modelLabel} Median`,
+    showSymbol: false,
+    lineStyle: {
+      width: 2,
+      color: modelColor,
+      type: 'dashed',
+    },
+    itemStyle: { color: modelColor },
+  })
+
+  if (overlay.band2SigmaLow && overlay.band2SigmaHigh) {
+    series.push(
+      {
+        type: 'line',
+        data: overlay.band2SigmaLow,
+        name: `${id}-2σ-low`,
+        showSymbol: false,
+        stack: `${id}-band-2sigma`,
+        lineStyle: { opacity: 0, width: 0 },
+        areaStyle: { opacity: 0 },
+      },
+      {
+        type: 'line',
+        data: overlay.band2SigmaHigh,
+        name: `${modelLabel} ±2σ`,
+        showSymbol: false,
+        stack: `${id}-band-2sigma`,
+        lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: '#64748b' },
+        areaStyle: { color: '#64748b1a' },
+      },
+      {
+        type: 'line',
+        data: overlay.band2SigmaLow,
+        name: `${id}-2σ-lower`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: '#64748b' },
+      },
+      {
+        type: 'line',
+        data: overlay.band2SigmaHigh,
+        name: `${id}-2σ-upper`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: '#64748b' },
+      },
+    )
+  }
+
+  if (overlay.band1SigmaLow && overlay.band1SigmaHigh) {
+    series.push(
+      {
+        type: 'line',
+        data: overlay.band1SigmaLow,
+        name: `${id}-1σ-low`,
+        showSymbol: false,
+        stack: `${id}-band-1sigma`,
+        lineStyle: { opacity: 0, width: 0 },
+        areaStyle: { opacity: 0 },
+      },
+      {
+        type: 'line',
+        data: overlay.band1SigmaHigh,
+        name: `${modelLabel} ±1σ`,
+        showSymbol: false,
+        stack: `${id}-band-1sigma`,
+        lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: modelColor },
+        areaStyle: { color: modelColor + '33' },
+      },
+      {
+        type: 'line',
+        data: overlay.band1SigmaLow,
+        name: `${id}-1σ-lower`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: modelColor },
+      },
+      {
+        type: 'line',
+        data: overlay.band1SigmaHigh,
+        name: `${id}-1σ-upper`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: modelColor },
+      },
+    )
+  }
+
+  if (overlay.bandP25 && overlay.bandP75) {
+    series.push(
+      {
+        type: 'line',
+        data: overlay.bandP25,
+        name: `${id}-p25-low`,
+        showSymbol: false,
+        stack: `${id}-band-p25`,
+        lineStyle: { opacity: 0, width: 0 },
+        areaStyle: { opacity: 0 },
+      },
+      {
+        type: 'line',
+        data: overlay.bandP75,
+        name: `${modelLabel} P25-P75`,
+        showSymbol: false,
+        stack: `${id}-band-p25`,
+        lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: '#22c55e' },
+        areaStyle: { color: '#22c55e33' },
+      },
+      {
+        type: 'line',
+        data: overlay.bandP25,
+        name: `${id}-p25`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: '#22c55e' },
+      },
+      {
+        type: 'line',
+        data: overlay.bandP75,
+        name: `${id}-p75`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: '#22c55e' },
+      },
+    )
+  }
+
+  if (overlay.bandP10 && overlay.bandP90) {
+    series.push(
+      {
+        type: 'line',
+        data: overlay.bandP10,
+        name: `${id}-p10-low`,
+        showSymbol: false,
+        stack: `${id}-band-p10`,
+        lineStyle: { opacity: 0, width: 0 },
+        areaStyle: { opacity: 0 },
+      },
+      {
+        type: 'line',
+        data: overlay.bandP90,
+        name: `${modelLabel} P10-P90`,
+        showSymbol: false,
+        stack: `${id}-band-p10`,
+        lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: '#94a3b8' },
+        areaStyle: { color: '#94a3b81a' },
+      },
+      {
+        type: 'line',
+        data: overlay.bandP10,
+        name: `${id}-p10`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: '#94a3b8' },
+      },
+      {
+        type: 'line',
+        data: overlay.bandP90,
+        name: `${id}-p90`,
+        showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' },
+        itemStyle: { color: '#94a3b8' },
+      },
+    )
+  }
+
+  return series
 }
 
-export function PriceChart({ data, modelOverlay }: PriceChartProps) {
+interface PriceChartProps {
+  data: PricePoint[]
+  modelOverlays?: ModelOverlay[]
+}
+
+export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
   const [logScale, setLogScale] = useState(true)
   const [zoomed, setZoomed] = useState(false)
   const chartRef = useRef<ReactEChartsCore>(null)
@@ -60,11 +245,11 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
 
     const markLines: Record<string, unknown>[] = []
 
-    if (modelOverlay) {
+    if (modelOverlays.length > 0) {
       markLines.push({
         data: [
           {
-            xAxis: modelOverlay.todayTimestamp,
+            xAxis: modelOverlays[0].todayTimestamp,
             label: { formatter: 'Today' },
           },
         ],
@@ -72,226 +257,16 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
         symbol: 'none',
       })
 
-      const colors: Record<string, string> = {
-        log_log: '#eab308',
-        power_fit: '#a855f7',
-        custom: '#06b6d4',
-      }
-      const modelColor =
-        colors[modelOverlay.formulation as keyof typeof colors] || '#eab308'
-
-      const bandColors = {
-        sigma1: modelColor,
-        sigma2: '#64748b',
-        pctInner: '#22c55e',
-        pctOuter: '#94a3b8',
-      }
-
-      series.push({
-        type: 'line',
-        data: modelOverlay.median,
-        name: 'Model Median',
-        showSymbol: false,
-        lineStyle: {
-          width: 2,
-          color: modelColor,
-          type: 'dashed',
-        },
-        itemStyle: { color: modelColor },
-      })
-
-      if (modelOverlay.band2SigmaLow && modelOverlay.band2SigmaHigh) {
-        series.push(
-          {
-            type: 'line',
-            data: modelOverlay.band2SigmaLow,
-            name: '2σ Band Low',
-            showSymbol: false,
-            stack: 'band-2sigma',
-            lineStyle: { opacity: 0, width: 0 },
-            areaStyle: { opacity: 0 },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.band2SigmaHigh,
-            name: '±2σ',
-            showSymbol: false,
-            stack: 'band-2sigma',
-            lineStyle: { opacity: 0, width: 0 },
-            itemStyle: { color: bandColors.sigma2 },
-            areaStyle: {
-              color: bandColors.sigma2 + '1a',
-            },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.band2SigmaLow,
-            name: '2σ Lower',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.sigma2 },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.band2SigmaHigh,
-            name: '2σ Upper',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.sigma2 },
-          },
-        )
-      }
-
-      if (modelOverlay.band1SigmaLow && modelOverlay.band1SigmaHigh) {
-        series.push(
-          {
-            type: 'line',
-            data: modelOverlay.band1SigmaLow,
-            name: '1σ Band Low',
-            showSymbol: false,
-            stack: 'band-1sigma',
-            lineStyle: { opacity: 0, width: 0 },
-            areaStyle: { opacity: 0 },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.band1SigmaHigh,
-            name: '±1σ',
-            showSymbol: false,
-            stack: 'band-1sigma',
-            lineStyle: { opacity: 0, width: 0 },
-            itemStyle: { color: bandColors.sigma1 },
-            areaStyle: {
-              color: bandColors.sigma1 + '33',
-            },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.band1SigmaLow,
-            name: '1σ Lower',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.sigma1 },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.band1SigmaHigh,
-            name: '1σ Upper',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.sigma1 },
-          },
-        )
-      }
-
-      if (modelOverlay.bandP25 && modelOverlay.bandP75) {
-        series.push(
-          {
-            type: 'line',
-            data: modelOverlay.bandP25,
-            name: 'P25 Low',
-            showSymbol: false,
-            stack: 'band-p25',
-            lineStyle: { opacity: 0, width: 0 },
-            areaStyle: { opacity: 0 },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.bandP75,
-            name: 'P25-P75',
-            showSymbol: false,
-            stack: 'band-p25',
-            lineStyle: { opacity: 0, width: 0 },
-            itemStyle: { color: bandColors.pctInner },
-            areaStyle: {
-              color: bandColors.pctInner + '33',
-            },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.bandP25,
-            name: 'P25',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.pctInner },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.bandP75,
-            name: 'P75',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.pctInner },
-          },
-        )
-      }
-
-      if (modelOverlay.bandP10 && modelOverlay.bandP90) {
-        series.push(
-          {
-            type: 'line',
-            data: modelOverlay.bandP10,
-            name: 'P10 Low',
-            showSymbol: false,
-            stack: 'band-p10',
-            lineStyle: { opacity: 0, width: 0 },
-            areaStyle: { opacity: 0 },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.bandP90,
-            name: 'P10-P90',
-            showSymbol: false,
-            stack: 'band-p10',
-            lineStyle: { opacity: 0, width: 0 },
-            itemStyle: { color: bandColors.pctOuter },
-            areaStyle: {
-              color: bandColors.pctOuter + '1a',
-            },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.bandP10,
-            name: 'P10',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.pctOuter },
-          },
-          {
-            type: 'line',
-            data: modelOverlay.bandP90,
-            name: 'P90',
-            showSymbol: false,
-            lineStyle: {
-              width: 1,
-              type: 'dashed',
-            },
-            itemStyle: { color: bandColors.pctOuter },
-          },
-        )
+      for (const overlay of modelOverlays) {
+        const modelLabel = MODEL_LABELS[overlay.modelId] || overlay.modelId
+        const modelColor = MODEL_COLORS[overlay.modelId] || '#eab308'
+        series.push(...buildOverlaySeries(overlay, modelLabel, modelColor))
       }
     }
+
+    const axisPointerSeries = series
+      .filter((s) => typeof s.name === 'string' && (s.name as string).endsWith('±1σ'))
+      .map((s) => s.name as string)
 
     return {
       grid: {
@@ -329,11 +304,15 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
         formatter: (params: { seriesName?: string; value: [number, number] }[]) => {
           if (!params || params.length === 0) return ''
           const items = params.filter(
-            (p) =>
-              p.seriesName === 'BTC Price' ||
-              p.seriesName === 'Model Median' ||
-              p.seriesName === '±1σ' ||
-              p.seriesName === '±2σ',
+            (p) => {
+              const name = p.seriesName || ''
+              return (
+                name === 'BTC Price' ||
+                name.endsWith(' Median') ||
+                name.endsWith('±1σ') ||
+                name.endsWith('±2σ')
+              )
+            },
           )
           if (items.length === 0) return ''
           const [ts] = items[0].value
@@ -349,7 +328,10 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
           }
           return html
         },
-        axisPointer: { type: 'cross' as const },
+        axisPointer: {
+          type: 'cross' as const,
+          ...(axisPointerSeries.length > 1 ? { link: [{ xAxisIndex: 'all' }] } : {}),
+        },
       },
       dataZoom: [
         {
@@ -370,14 +352,14 @@ export function PriceChart({ data, modelOverlay }: PriceChartProps) {
         },
       ],
       legend: {
-        show: !!modelOverlay,
+        show: modelOverlays.length > 0,
         bottom: 40,
         left: 'center',
         textStyle: { fontSize: 11 },
       },
       animation: false,
     }
-  }, [chartData, logScale, modelOverlay])
+  }, [chartData, logScale, modelOverlays])
 
   const handleDataZoom = useCallback(() => {
     setZoomed(true)

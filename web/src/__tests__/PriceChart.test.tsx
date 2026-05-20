@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { PriceChart } from '@/components/charts/PriceChart'
 import type { PricePoint } from '@/types/price'
+import type { ModelOverlay } from '@/types/models'
 
 vi.mock('echarts/core', () => {
   class LinearGradient {}
@@ -38,6 +39,14 @@ const sampleData: PricePoint[] = [
   { timestamp_ms: 1700000000000, price_usd: 37500.0 },
 ]
 
+const sampleOverlay: ModelOverlay = {
+  modelId: 'power-law',
+  median: [[1704067200000, 55000]],
+  todayTimestamp: Date.now(),
+  formulation: 'log_log',
+  rSquared: 0.95,
+}
+
 describe('PriceChart', () => {
   it('renders the chart container', () => {
     render(<PriceChart data={sampleData} />)
@@ -69,18 +78,25 @@ describe('PriceChart', () => {
     expect(screen.queryByRole('button', { name: /reset zoom/i })).not.toBeInTheDocument()
   })
 
-  it('renders with model overlay without error', () => {
-    render(
-      <PriceChart
-        data={sampleData}
-        modelOverlay={{
-          median: [[1704067200000, 55000]],
-          todayTimestamp: Date.now(),
-          formulation: 'log_log',
-          rSquared: 0.95,
-        }}
-      />,
-    )
+  it('renders with one model overlay without error', () => {
+    render(<PriceChart data={sampleData} modelOverlays={[sampleOverlay]} />)
+    expect(screen.getByTestId('echarts-mock')).toBeInTheDocument()
+  })
+
+  it('renders with two model overlays without error', () => {
+    const s2fOverlay: ModelOverlay = {
+      modelId: 's2f',
+      median: [[1704067200000, 40000]],
+      todayTimestamp: Date.now(),
+      formulation: 's2f',
+      rSquared: 0.85,
+    }
+    render(<PriceChart data={sampleData} modelOverlays={[sampleOverlay, s2fOverlay]} />)
+    expect(screen.getByTestId('echarts-mock')).toBeInTheDocument()
+  })
+
+  it('renders with zero overlays without error', () => {
+    render(<PriceChart data={sampleData} modelOverlays={[]} />)
     expect(screen.getByTestId('echarts-mock')).toBeInTheDocument()
   })
 })

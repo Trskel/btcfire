@@ -15,10 +15,11 @@ Implement the classic PlanB Stock-to-Flow (S2F) price model in Rust/WASM, add ch
   - Project forward: compute future S2F values from the halving schedule (S2F doubles at each halving), apply the fitted model to get projected prices for each future year.
   - Confidence bands: ±1σ from residual standard deviation of the fit.
 - **WASM bindings**: single export `run_s2f_wasm(config_js: JsValue, historic_data_js: JsValue) -> JsValue`. Same pattern as `run_power_law_wasm`.
-- **Model visibility controls** (`web/src/components/controls/ModelSelector.tsx`): a list of models, each with a checkbox to toggle visibility on the chart. Multiple models can be visible at the same time. Each model row has an expand/collapse toggle to show its controls panel. Only one model's controls are expanded at a time.
-- **S2F controls** (`web/src/components/controls/S2FControls.tsx`): projection horizon slider (5–50 years, default 30). S2F has fewer configurable parameters than Power Law since it's a single-formulation model.
+- **Model visibility controls** (`web/src/components/controls/ModelSelector.tsx`): a list of models, each with a checkbox to toggle visibility on the chart. Multiple models can be visible at the same time. Each model row has an expand/collapse toggle to show its controls panel. Only one model's controls are expanded at a time. Checking a model's visibility checkbox automatically expands its controls panel.
+- **Shared projection horizon**: a single projection horizon slider (5–50 years, default 30) rendered above the model list in the "Price Models" card. All models share the same projection horizon value — changing the slider updates all models' projections simultaneously. Individual model controls panels no longer contain their own horizon sliders.
+- **S2F controls** (`web/src/components/controls/S2FControls.tsx`): S2F has fewer configurable parameters than Power Law since it's a single-formulation model. The projection horizon is provided by the parent via props.
 - **Multi-overlay chart support**: `PriceChart` is refactored to accept an array of `ModelOverlay` objects (`modelOverlays?: ModelOverlay[]`) and render all of them simultaneously. Each model gets a distinct color. Legend shows all visible model entries.
-- **State management**: `App.tsx` tracks a `Set<ModelId>` of visible models and a `Record<ModelId, ModelOverlay | null>` of computed overlays. All models' WASM computations run independently regardless of visibility — toggling visibility only adds/removes the overlay from the chart.
+- **State management**: `App.tsx` tracks a `Set<ModelId>` of visible models, a `Record<ModelId, ModelOverlay | null>` of computed overlays, and a single shared `projectionYears` value. All models' WASM computations run independently regardless of visibility — toggling visibility only adds/removes the overlay from the chart.
 - **Tests**: Rust unit tests for S2F computation and regression against hand-computed values. React component tests for visibility checkboxes, expand/collapse, S2F controls, and multi-overlay chart rendering.
 
 ### Out of scope
@@ -46,6 +47,8 @@ Implement the classic PlanB Stock-to-Flow (S2F) price model in Rust/WASM, add ch
 | Confidence bands | ±1σ only (residual-based) | Same as Power Law default. Simple, consistent across models. Users can compare models knowing the band has the same statistical meaning. |
 | Model controls pattern | Each model has its own controls component | Consistent with Phase 3. Phase 5 (Bitcoin24) will add a third row to the model list. The expand/collapse pattern composes cleanly. |
 | Simultaneous models on chart | In this phase | The chart renders all checked-in models at once. This was originally deferred to Phase 13 but is pulled forward as a core model comparison feature. |
+| Projection horizon | Shared across all models, single slider above the model list | Comparing models is only meaningful with the same time horizon. A shared slider avoids inconsistent projections and reduces visual clutter. |
+| Auto-expand on check | Checking a model's visibility checkbox automatically expands its controls panel | Users checking a model likely want to configure it. Auto-expanding removes an extra click and makes the interaction feel responsive. |
 
 ## Context
 

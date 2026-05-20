@@ -1,18 +1,90 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PriceChart } from '@/components/charts/PriceChart'
 import { PowerLawControls } from '@/components/controls/PowerLawControls'
 import { S2FControls } from '@/components/controls/S2FControls'
 import { ModelSelector } from '@/components/controls/ModelSelector'
+import type { ModelEntry } from '@/components/controls/ModelSelector'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { useHistoricPrices } from '@/hooks/useHistoricPrices'
 import type { ModelOverlay, ModelId } from '@/types/models'
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
-  const [modelOverlay, setModelOverlay] = useState<ModelOverlay | null>(null)
-  const [activeModel, setActiveModel] = useState<ModelId>('power-law')
+  const [modelOverlays, setModelOverlays] = useState<Record<ModelId, ModelOverlay | null>>({
+    'power-law': null,
+    's2f': null,
+  })
+  const [visibleModels, setVisibleModels] = useState<Set<ModelId>>(
+    new Set<ModelId>(['power-law']),
+  )
+  const [expandedModel, setExpandedModel] = useState<ModelId | null>('power-law')
+  const [projectionYears, setProjectionYears] = useState(30)
+
+  const handleModelChange = useCallback(
+    (modelId: ModelId, overlay: ModelOverlay | null) => {
+      setModelOverlays((prev) => ({ ...prev, [modelId]: overlay }))
+    },
+    [],
+  )
+
+  const handleToggleVisibilityWithExpand = useCallback(
+    (modelId: ModelId) => {
+      setVisibleModels((prev) => {
+        const next = new Set(prev)
+        if (next.has(modelId)) {
+          next.delete(modelId)
+        } else {
+          next.add(modelId)
+          setExpandedModel(modelId)
+        }
+        return next
+      })
+    },
+    [],
+  )
+
+  const handleToggleExpand = useCallback((modelId: ModelId) => {
+    setExpandedModel((prev) => (prev === modelId ? null : modelId))
+  }, [])
+
+  const visibleOverlays = useMemo(() => {
+    return Object.entries(modelOverlays)
+      .filter(([id]) => visibleModels.has(id as ModelId))
+      .map(([, overlay]) => overlay)
+      .filter((o): o is ModelOverlay => o !== null)
+  }, [modelOverlays, visibleModels])
+
+  const modelEntries: ModelEntry[] = useMemo(() => {
+    if (!data) return []
+    return [
+      {
+        id: 'power-law' as ModelId,
+        label: 'Power Law',
+        shortLabel: 'Power Law',
+        controls: (
+          <PowerLawControls
+            historicData={data}
+            projectionYears={projectionYears}
+            onModelChange={(overlay) => handleModelChange('power-law', overlay)}
+          />
+        ),
+      },
+      {
+        id: 's2f' as ModelId,
+        label: 'Stock-to-Flow (S2F)',
+        shortLabel: 'S2F',
+        controls: (
+          <S2FControls
+            historicData={data}
+            projectionYears={projectionYears}
+            onModelChange={(overlay) => handleModelChange('s2f', overlay)}
+          />
+        ),
+      },
+    ]
+  }, [data, projectionYears, handleModelChange])
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 md:px-8 lg:px-16">
@@ -61,31 +133,43 @@ function App() {
                 </Button>
               </div>
             )}
-            {data && <PriceChart data={data} modelOverlay={modelOverlay} />}
+            {data && (
+              <PriceChart data={data} modelOverlays={visibleOverlays} />
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Price Models</CardTitle>
-            <CardDescription>Choose a model to project future BTC prices</CardDescription>
+            <CardDescription>
+              Choose which models to overlay on the chart
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {data && (
-              <ModelSelector activeModel={activeModel} onModelChange={setActiveModel}>
-                {activeModel === 'power-law' && (
-                  <PowerLawControls
-                    historicData={data}
-                    onModelChange={setModelOverlay}
+              <>
+                <div className="mb-4">
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Projection Horizon: {projectionYears}y
+                  </label>
+                  <input
+                    type="range"
+                    min={5}
+                    max={50}
+                    value={projectionYears}
+                    onChange={(e) => setProjectionYears(parseInt(e.target.value))}
+                    className="min-h-[44px] w-full"
                   />
-                )}
-                {activeModel === 's2f' && (
-                  <S2FControls
-                    historicData={data}
-                    onModelChange={setModelOverlay}
-                  />
-                )}
-              </ModelSelector>
+                </div>
+                <ModelSelector
+                  models={modelEntries}
+                  visibleModels={visibleModels}
+                  expandedModel={expandedModel}
+                  onToggleVisibility={handleToggleVisibilityWithExpand}
+                  onToggleExpand={handleToggleExpand}
+                />
+              </>
             )}
             {!data && !isLoading && (
               <p className="text-sm text-muted-foreground">Price data is required to fit the model.</p>

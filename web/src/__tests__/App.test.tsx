@@ -118,8 +118,18 @@ describe('App', () => {
     expect(screen.getByText('2 days of data')).toBeInTheDocument()
   })
 
-  it('renders Power Law controls', () => {
+  it('renders Price Models card with visibility controls', () => {
     render(<App />)
     expect(screen.getByText('Price Models')).toBeInTheDocument()
+    expect(screen.getAllByText('Power Law').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('S2F').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('Power Law is checked and expanded by default', () => {
+    render(<App />)
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[]
+    expect(checkboxes).toHaveLength(2)
+    expect(checkboxes[0]).toBeChecked()
+    expect(checkboxes[1]).not.toBeChecked()
   })
 })
