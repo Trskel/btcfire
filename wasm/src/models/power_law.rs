@@ -284,21 +284,20 @@ fn compute_band_points(
     let mut sorted_residuals = residuals.to_vec();
     sorted_residuals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
-    let (_p10, _p90, _p25, _p75) = if !sorted_residuals.is_empty() {
+    let (actual_p10, actual_p90, actual_p25, actual_p75) = if !sorted_residuals.is_empty() {
+        let cp10 = custom_p10.unwrap_or(10.0);
+        let cp90 = custom_p90.unwrap_or(90.0);
+        let cp25 = custom_p25.unwrap_or(25.0);
+        let cp75 = custom_p75.unwrap_or(75.0);
         (
-            percentile(&sorted_residuals, 10.0),
-            percentile(&sorted_residuals, 90.0),
-            percentile(&sorted_residuals, 25.0),
-            percentile(&sorted_residuals, 75.0),
+            percentile(&sorted_residuals, cp10),
+            percentile(&sorted_residuals, cp90),
+            percentile(&sorted_residuals, cp25),
+            percentile(&sorted_residuals, cp75),
         )
     } else {
         (0.0, 0.0, 0.0, 0.0)
     };
-
-    let actual_p10 = custom_p10.unwrap_or(_p10);
-    let actual_p90 = custom_p90.unwrap_or(_p90);
-    let actual_p25 = custom_p25.unwrap_or(_p25);
-    let actual_p75 = custom_p75.unwrap_or(_p75);
 
     let mut points = Vec::new();
 
@@ -755,10 +754,10 @@ mod tests {
             custom_a: None,
             custom_b: None,
             projection_years: 30,
-            custom_p10: Some(-0.3),
-            custom_p90: Some(0.3),
-            custom_p25: Some(-0.15),
-            custom_p75: Some(0.15),
+            custom_p10: Some(15.0),
+            custom_p90: Some(85.0),
+            custom_p25: Some(35.0),
+            custom_p75: Some(65.0),
         };
         let result = run_power_law(config, data).unwrap();
         for point in &result.points {

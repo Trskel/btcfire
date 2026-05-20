@@ -57,10 +57,10 @@ export function PowerLawControls({
       }
 
       if (bandStyle === 'custom_percentiles') {
-        config.customP10 = parseFloat(customP10) / 100
-        config.customP90 = parseFloat(customP90) / 100
-        config.customP25 = parseFloat(customP25) / 100
-        config.customP75 = parseFloat(customP75) / 100
+        config.customP10 = parseFloat(customP10)
+        config.customP90 = parseFloat(customP90)
+        config.customP25 = parseFloat(customP25)
+        config.customP75 = parseFloat(customP75)
       }
 
       const rawResult = (await run_power_law_wasm(config, historicData)) as PowerLawResult
