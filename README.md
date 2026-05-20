@@ -39,7 +39,9 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 | ✅ | Interactive BTC price history chart (ECharts, log/linear, pan/zoom) |
 | ✅ | Power Law price model (log-log fit, power fit, custom parameters) |
 | ✅ | Stock-to-Flow (S2F) price model (log price ~ log S2F regression) |
-| ✅ | Model selector tabs — switch between Power Law and S2F instantly |
+| ✅ | Checkbox visibility controls — show multiple model overlays on the chart simultaneously |
+| ✅ | Shared projection horizon slider — one control for all models |
+| ✅ | Expandable controls panels per model with auto-expand on check |
 | ✅ | Configurable confidence bands (±1σ, ±2σ, custom percentiles) |
 | ✅ | WASM-powered model fitting — sub-millisecond recomputation |
 | ✅ | Full Power Law controls: formulation, band style, projection horizon slider |
