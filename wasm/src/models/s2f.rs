@@ -2,7 +2,7 @@ use crate::data::PricePoint;
 use crate::models::ModelPoint;
 use super::stats::{
     current_year, first_historic_year, linear_regression, log10, pow10,
-    residual_std_dev,
+    residual_std_dev, year_midpoint_timestamp, jan1_timestamp,
 };
 use serde::{Deserialize, Serialize};
 
@@ -65,16 +65,6 @@ fn get_s2f_for_timestamp(ts_ms: i64) -> f64 {
     supply / annual_issuance
 }
 
-fn year_midpoint_timestamp(year: i32) -> i64 {
-    let days_since_1970 = (year - 1970) as f64 * 365.25 + 182.5;
-    (days_since_1970 * 86_400.0) as i64 * 1000
-}
-
-fn jan1_timestamp(year: i32) -> i64 {
-    let days_since_1970 = (year - 1970) as f64 * 365.25;
-    (days_since_1970 * 86_400.0) as i64 * 1000
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct S2FConfig {
@@ -106,11 +96,12 @@ pub fn run_s2f(config: S2FConfig, historic_data: Vec<PricePoint>) -> Result<S2FR
         return Err("Projection years must be non-negative".to_string());
     }
 
-    let first_halving_ts = get_halvings()[1].0;
+    // Filter to data after July 2010 when BTC had meaningful exchange-traded value
+    let min_trading_ts: i64 = 1_277_942_400_000;
 
     let reg_points: Vec<(f64, f64)> = historic_data
         .iter()
-        .filter(|p| p.timestamp_ms >= first_halving_ts)
+        .filter(|p| p.timestamp_ms >= min_trading_ts)
         .filter(|p| p.price_usd > 0.0)
         .map(|p| {
             let s2f = get_s2f_for_timestamp(p.timestamp_ms);
@@ -119,7 +110,7 @@ pub fn run_s2f(config: S2FConfig, historic_data: Vec<PricePoint>) -> Result<S2FR
         .collect();
 
     if reg_points.len() < 2 {
-        return Err("Not enough data points after the first halving to fit S2F model".to_string());
+        return Err("Not enough data points after July 2010 to fit S2F model".to_string());
     }
 
     let xs: Vec<f64> = reg_points.iter().map(|(x, _)| *x).collect();

@@ -26,17 +26,35 @@ echarts.use([
   CanvasRenderer,
 ])
 
+function logVal(v: number): number {
+  return Math.log10(Math.max(v, 1e-6))
+}
+
+function toLogPair([t, v]: [number, number]): [number, number] {
+  return [t, logVal(v)]
+}
+
+function formatLogLabel(logV: number): string {
+  if (logV >= 9) return `$${Math.pow(10, logV - 9).toFixed(0)}B`
+  if (logV >= 6) return `$${Math.pow(10, logV - 6).toFixed(0)}M`
+  if (logV >= 3) return `$${Math.pow(10, logV - 3).toFixed(0)}k`
+  if (logV >= 0) return `$${Math.pow(10, logV).toFixed(0)}`
+  return `$${Math.pow(10, logV).toFixed(2)}`
+}
+
 function buildOverlaySeries(
   overlay: ModelOverlay,
   modelLabel: string,
   modelColor: string,
+  logScale: boolean,
 ): Record<string, unknown>[] {
   const id = overlay.modelId
   const series: Record<string, unknown>[] = []
+  const mapPair = logScale ? toLogPair : (p: [number, number]) => p
 
   series.push({
     type: 'line',
-    data: overlay.median,
+    data: overlay.median.map(mapPair),
     name: `${modelLabel} Median`,
     showSymbol: false,
     lineStyle: {
@@ -48,161 +66,101 @@ function buildOverlaySeries(
   })
 
   if (overlay.band2SigmaLow && overlay.band2SigmaHigh) {
+    const low = overlay.band2SigmaLow.map(mapPair)
+    const high = overlay.band2SigmaHigh.map(mapPair)
+    const diff: [number, number][] = high.map(([t, v], i) => [t, v - low[i][1]])
     series.push(
       {
-        type: 'line',
-        data: overlay.band2SigmaLow,
-        name: `${id}-2σ-low`,
-        showSymbol: false,
-        stack: `${id}-band-2sigma`,
-        lineStyle: { opacity: 0, width: 0 },
-        areaStyle: { opacity: 0 },
+        type: 'line', data: low, name: `${id}-2σ-low`, showSymbol: false,
+        stack: `${id}-band-2sigma`, lineStyle: { opacity: 0, width: 0 }, areaStyle: { opacity: 0 },
       },
       {
-        type: 'line',
-        data: overlay.band2SigmaHigh,
-        name: `${modelLabel} ±2σ`,
-        showSymbol: false,
-        stack: `${id}-band-2sigma`,
-        lineStyle: { opacity: 0, width: 0 },
-        itemStyle: { color: '#64748b' },
-        areaStyle: { color: '#64748b1a' },
+        type: 'line', data: diff, name: `${modelLabel} ±2σ`, showSymbol: false,
+        stack: `${id}-band-2sigma`, lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: '#64748b' }, areaStyle: { color: '#64748b1a' },
       },
       {
-        type: 'line',
-        data: overlay.band2SigmaLow,
-        name: `${id}-2σ-lower`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: '#64748b' },
+        type: 'line', data: low, name: `${id}-2σ-lower`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: '#64748b' },
       },
       {
-        type: 'line',
-        data: overlay.band2SigmaHigh,
-        name: `${id}-2σ-upper`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: '#64748b' },
+        type: 'line', data: high, name: `${id}-2σ-upper`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: '#64748b' },
       },
     )
   }
 
   if (overlay.band1SigmaLow && overlay.band1SigmaHigh) {
+    const low = overlay.band1SigmaLow.map(mapPair)
+    const high = overlay.band1SigmaHigh.map(mapPair)
+    const diff: [number, number][] = high.map(([t, v], i) => [t, v - low[i][1]])
     series.push(
       {
-        type: 'line',
-        data: overlay.band1SigmaLow,
-        name: `${id}-1σ-low`,
-        showSymbol: false,
-        stack: `${id}-band-1sigma`,
-        lineStyle: { opacity: 0, width: 0 },
-        areaStyle: { opacity: 0 },
+        type: 'line', data: low, name: `${id}-1σ-low`, showSymbol: false,
+        stack: `${id}-band-1sigma`, lineStyle: { opacity: 0, width: 0 }, areaStyle: { opacity: 0 },
       },
       {
-        type: 'line',
-        data: overlay.band1SigmaHigh,
-        name: `${modelLabel} ±1σ`,
-        showSymbol: false,
-        stack: `${id}-band-1sigma`,
-        lineStyle: { opacity: 0, width: 0 },
-        itemStyle: { color: modelColor },
-        areaStyle: { color: modelColor + '33' },
+        type: 'line', data: diff, name: `${modelLabel} ±1σ`, showSymbol: false,
+        stack: `${id}-band-1sigma`, lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: modelColor }, areaStyle: { color: modelColor + '33' },
       },
       {
-        type: 'line',
-        data: overlay.band1SigmaLow,
-        name: `${id}-1σ-lower`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: modelColor },
+        type: 'line', data: low, name: `${id}-1σ-lower`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: modelColor },
       },
       {
-        type: 'line',
-        data: overlay.band1SigmaHigh,
-        name: `${id}-1σ-upper`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: modelColor },
+        type: 'line', data: high, name: `${id}-1σ-upper`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: modelColor },
       },
     )
   }
 
   if (overlay.bandP25 && overlay.bandP75) {
+    const low = overlay.bandP25.map(mapPair)
+    const high = overlay.bandP75.map(mapPair)
+    const diff: [number, number][] = high.map(([t, v], i) => [t, v - low[i][1]])
     series.push(
       {
-        type: 'line',
-        data: overlay.bandP25,
-        name: `${id}-p25-low`,
-        showSymbol: false,
-        stack: `${id}-band-p25`,
-        lineStyle: { opacity: 0, width: 0 },
-        areaStyle: { opacity: 0 },
+        type: 'line', data: low, name: `${id}-p25-low`, showSymbol: false,
+        stack: `${id}-band-p25`, lineStyle: { opacity: 0, width: 0 }, areaStyle: { opacity: 0 },
       },
       {
-        type: 'line',
-        data: overlay.bandP75,
-        name: `${modelLabel} P25-P75`,
-        showSymbol: false,
-        stack: `${id}-band-p25`,
-        lineStyle: { opacity: 0, width: 0 },
-        itemStyle: { color: '#22c55e' },
-        areaStyle: { color: '#22c55e33' },
+        type: 'line', data: diff, name: `${modelLabel} P25-P75`, showSymbol: false,
+        stack: `${id}-band-p25`, lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: '#22c55e' }, areaStyle: { color: '#22c55e33' },
       },
       {
-        type: 'line',
-        data: overlay.bandP25,
-        name: `${id}-p25`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: '#22c55e' },
+        type: 'line', data: low, name: `${id}-p25`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: '#22c55e' },
       },
       {
-        type: 'line',
-        data: overlay.bandP75,
-        name: `${id}-p75`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: '#22c55e' },
+        type: 'line', data: high, name: `${id}-p75`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: '#22c55e' },
       },
     )
   }
 
   if (overlay.bandP10 && overlay.bandP90) {
+    const low = overlay.bandP10.map(mapPair)
+    const high = overlay.bandP90.map(mapPair)
+    const diff: [number, number][] = high.map(([t, v], i) => [t, v - low[i][1]])
     series.push(
       {
-        type: 'line',
-        data: overlay.bandP10,
-        name: `${id}-p10-low`,
-        showSymbol: false,
-        stack: `${id}-band-p10`,
-        lineStyle: { opacity: 0, width: 0 },
-        areaStyle: { opacity: 0 },
+        type: 'line', data: low, name: `${id}-p10-low`, showSymbol: false,
+        stack: `${id}-band-p10`, lineStyle: { opacity: 0, width: 0 }, areaStyle: { opacity: 0 },
       },
       {
-        type: 'line',
-        data: overlay.bandP90,
-        name: `${modelLabel} P10-P90`,
-        showSymbol: false,
-        stack: `${id}-band-p10`,
-        lineStyle: { opacity: 0, width: 0 },
-        itemStyle: { color: '#94a3b8' },
-        areaStyle: { color: '#94a3b81a' },
+        type: 'line', data: diff, name: `${modelLabel} P10-P90`, showSymbol: false,
+        stack: `${id}-band-p10`, lineStyle: { opacity: 0, width: 0 },
+        itemStyle: { color: '#94a3b8' }, areaStyle: { color: '#94a3b81a' },
       },
       {
-        type: 'line',
-        data: overlay.bandP10,
-        name: `${id}-p10`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: '#94a3b8' },
+        type: 'line', data: low, name: `${id}-p10`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: '#94a3b8' },
       },
       {
-        type: 'line',
-        data: overlay.bandP90,
-        name: `${id}-p90`,
-        showSymbol: false,
-        lineStyle: { width: 1, type: 'dashed' },
-        itemStyle: { color: '#94a3b8' },
+        type: 'line', data: high, name: `${id}-p90`, showSymbol: false,
+        lineStyle: { width: 1, type: 'dashed' }, itemStyle: { color: '#94a3b8' },
       },
     )
   }
@@ -229,7 +187,9 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
     const series: Record<string, unknown>[] = [
       {
         type: 'line',
-        data: chartData,
+        data: chartData.map(([t, v]: [number, number]) =>
+          logScale ? ([t, logVal(v)] as [number, number]) : ([t, v] as [number, number]),
+        ),
         name: 'BTC Price',
         showSymbol: false,
         lineStyle: { width: 1.5, color: '#f7931a' },
@@ -256,11 +216,20 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
         lineStyle: { type: 'dashed' as const, color: '#888', width: 1 },
         symbol: 'none',
       })
+    }
 
-      for (const overlay of modelOverlays) {
-        const modelLabel = MODEL_LABELS[overlay.modelId] || overlay.modelId
-        const modelColor = MODEL_COLORS[overlay.modelId] || '#eab308'
-        series.push(...buildOverlaySeries(overlay, modelLabel, modelColor))
+    const legendData: string[] = ['BTC Price']
+
+    for (const overlay of modelOverlays) {
+      const modelLabel = MODEL_LABELS[overlay.modelId] || overlay.modelId
+      const modelColor = MODEL_COLORS[overlay.modelId] || '#eab308'
+      const overlaySeries = buildOverlaySeries(overlay, modelLabel, modelColor, logScale)
+      series.push(...overlaySeries)
+      for (const s of overlaySeries) {
+        const name = s.name as string
+        if (!legendData.includes(name)) {
+          legendData.push(name)
+        }
       }
     }
 
@@ -285,18 +254,23 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
         splitLine: { show: false },
       },
       yAxis: {
-        type: logScale ? ('log' as const) : ('value' as const),
+        type: logScale ? ('value' as const) : ('value' as const),
+        ...(logScale
+          ? { min: -2 }
+          : { min: 0 }),
         axisLabel: {
           fontSize: 11,
-          formatter: (value: number) => {
-            if (value >= 1000) return `$${(value / 1000).toFixed(0)}k`
+          formatter: logScale ? formatLogLabel : (value: number) => {
+            if (value >= 1e12) return `$${(value / 1e12).toFixed(0)}T`
+            if (value >= 1e9) return `$${(value / 1e9).toFixed(0)}B`
+            if (value >= 1e6) return `$${(value / 1e6).toFixed(0)}M`
+            if (value >= 1e3) return `$${(value / 1e3).toFixed(0)}k`
             return `$${value.toFixed(0)}`
           },
         },
         splitLine: {
           lineStyle: { type: 'dashed' as const, opacity: 0.3 },
         },
-        min: logScale ? 1 : undefined,
       },
       series,
       tooltip: {
@@ -315,15 +289,15 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
             },
           )
           if (items.length === 0) return ''
-          const [ts] = items[0].value
-          const date = new Date(ts).toLocaleDateString('en-US', {
+          const date = new Date(items[0].value[0]).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
           })
           let html = `${date}<br/>`
           for (const item of items) {
-            const [, price] = item.value
+            const [, v] = item.value
+            const price = logScale ? Math.pow(10, v) : v
             html += `${item.seriesName}: <strong>$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong><br/>`
           }
           return html
@@ -353,9 +327,11 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
       ],
       legend: {
         show: modelOverlays.length > 0,
+        type: 'scroll' as const,
         bottom: 40,
         left: 'center',
         textStyle: { fontSize: 11 },
+        data: legendData,
       },
       animation: false,
     }

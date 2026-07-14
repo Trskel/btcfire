@@ -3,16 +3,8 @@ import type { S2FConfig, S2FResult } from '@/types/models'
 import { toModelOverlay } from '@/types/models'
 import type { ModelOverlay } from '@/types/models'
 import type { PricePoint } from '@/types/price'
-import init, { run_s2f_wasm } from 'btcfire-wasm'
-
-let wasmReady = false
-
-async function ensureWasm() {
-  if (!wasmReady) {
-    await init()
-    wasmReady = true
-  }
-}
+import { run_s2f_wasm } from 'btcfire-wasm'
+import { ensureWasm } from '@/lib/wasm'
 
 interface S2FControlsProps {
   historicData: PricePoint[]
@@ -71,9 +63,14 @@ export function S2FControls({
       )}
 
       {result && (
-        <p className="text-xs text-muted-foreground">
-          R² = {result.rSquared.toFixed(4)} | a = {result.a.toFixed(2)} | b = {result.b.toFixed(2)}
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            R² = {result.rSquared.toFixed(4)} | a = {result.a.toFixed(2)} | b = {result.b.toFixed(2)}
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            R² measures fit to past data only — it does not predict future accuracy.
+          </p>
+        </div>
       )}
 
       <p className="text-xs text-muted-foreground">

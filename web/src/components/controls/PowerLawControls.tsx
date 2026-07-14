@@ -3,15 +3,12 @@ import type { PowerLawConfig, PowerLawResult, Formulation, BandStyle } from '@/t
 import { toModelOverlay } from '@/types/models'
 import type { ModelOverlay } from '@/types/models'
 import type { PricePoint } from '@/types/price'
-import init, { run_power_law_wasm } from 'btcfire-wasm'
+import { run_power_law_wasm } from 'btcfire-wasm'
+import { ensureWasm } from '@/lib/wasm'
 
-let wasmReady = false
-
-async function ensureWasm() {
-  if (!wasmReady) {
-    await init()
-    wasmReady = true
-  }
+function parseFiniteFloat(val: string, fallback: number): number {
+  const n = parseFloat(val)
+  return Number.isFinite(n) ? n : fallback
 }
 
 interface PowerLawControlsProps {
@@ -52,15 +49,15 @@ export function PowerLawControls({
       }
 
       if (formulation === 'custom') {
-        config.customA = parseFloat(customA)
-        config.customB = parseFloat(customB)
+        config.customA = parseFiniteFloat(customA, 5.84)
+        config.customB = parseFiniteFloat(customB, -17.3)
       }
 
       if (bandStyle === 'custom_percentiles') {
-        config.customP10 = parseFloat(customP10)
-        config.customP90 = parseFloat(customP90)
-        config.customP25 = parseFloat(customP25)
-        config.customP75 = parseFloat(customP75)
+        config.customP10 = parseFiniteFloat(customP10, 10)
+        config.customP90 = parseFiniteFloat(customP90, 90)
+        config.customP25 = parseFiniteFloat(customP25, 25)
+        config.customP75 = parseFiniteFloat(customP75, 75)
       }
 
       const rawResult = (await run_power_law_wasm(config, historicData)) as PowerLawResult
@@ -223,9 +220,18 @@ export function PowerLawControls({
       )}
 
       {result && (
-        <p className="text-xs text-muted-foreground">
-          R² = {result.rSquared.toFixed(4)} | a = {result.a.toFixed(2)} | b = {result.b.toFixed(2)}
-        </p>
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">
+            R² = {result.rSquared.toFixed(4)} | a = {result.a.toFixed(2)}
+            {formulation === 'power_fit'
+              ? <> | 10<sup>b</sup> = {result.b.toFixed(2)}</>
+              : <> | b = {result.b.toFixed(2)}</>
+            }
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            R² measures fit to past data only — it does not predict future accuracy.
+          </p>
+        </div>
       )}
     </div>
   )

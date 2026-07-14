@@ -81,22 +81,65 @@ pub(crate) fn residual_std_dev(residuals: &[f64]) -> f64 {
         return 0.0;
     }
     let mean = residuals.iter().sum::<f64>() / n;
-    let variance = residuals.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / n;
+    let variance = residuals.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / (n - 1.0);
     variance.sqrt()
 }
 
 pub(crate) fn current_year() -> i32 {
     let now_ms = js_sys::Date::now() as i64;
-    let days_since_epoch = (now_ms as f64 / MS_PER_DAY).floor();
-    let years_since_epoch = (days_since_epoch / 365.25).floor() as i32;
-    1970 + years_since_epoch
+    let now_days = (now_ms as f64 / MS_PER_DAY).floor() as i64;
+    let years = epoch_days_to_year(now_days);
+    years
+}
+
+fn is_leap_year(y: i32) -> bool {
+    (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
+}
+
+fn epoch_days_to_jan1(year: i32) -> i64 {
+    let mut days: i64 = 0;
+    for y in 1970..year {
+        days += if is_leap_year(y) { 366 } else { 365 };
+    }
+    days
+}
+
+fn epoch_days_to_year(epoch_days: i64) -> i32 {
+    let mut year = 1970;
+    let mut remaining = epoch_days;
+    loop {
+        let year_days: i64 = if is_leap_year(year) { 366 } else { 365 };
+        if remaining < year_days {
+            break;
+        }
+        remaining -= year_days;
+        year += 1;
+    }
+    year
+}
+
+pub(crate) fn days_to_jan1(year: i32) -> f64 {
+    let genesis_days = GENESIS_MS as f64 / MS_PER_DAY;
+    epoch_days_to_jan1(year) as f64 - genesis_days
+}
+
+pub(crate) fn jan1_timestamp(year: i32) -> i64 {
+    epoch_days_to_jan1(year) * MS_PER_DAY as i64
+}
+
+pub(crate) fn year_midpoint_timestamp(year: i32) -> i64 {
+    let jan1_days = epoch_days_to_jan1(year);
+    let mid_days = jan1_days + 182;
+    mid_days * MS_PER_DAY as i64
 }
 
 pub(crate) fn first_historic_year(data: &[PricePoint]) -> i32 {
     data.iter()
         .map(|p| {
-            let days = days_since_genesis(p.timestamp_ms);
-            let years = days / 365.25;
+            let days = (p.timestamp_ms / MS_PER_DAY as i64) as f64;
+            let genesis_days = GENESIS_MS as f64 / MS_PER_DAY;
+            let days_since_genesis = days - genesis_days;
+            let years = days_since_genesis / 365.25;
             2009 + years.floor() as i32
         })
         .min()

@@ -1,18 +1,10 @@
 use crate::data::PricePoint;
 use crate::models::ModelPoint;
-use super::stats::{
-    days_since_genesis, first_historic_year, current_year, linear_regression, log10, pow10,
-    residual_std_dev,
-};
 use serde::{Deserialize, Serialize};
-
-const SECONDS_PER_DAY: f64 = 86_400.0;
-
-fn year_to_days(year: i32) -> f64 {
-    let jan1_unix_seconds = ((year - 1970) as f64) * 365.25 * SECONDS_PER_DAY;
-    let jan1_ms = jan1_unix_seconds * 1000.0;
-    days_since_genesis(jan1_ms as i64)
-}
+use super::stats::{
+    days_since_genesis, days_to_jan1, first_historic_year, current_year, linear_regression, log10,
+    pow10, residual_std_dev, jan1_timestamp,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -163,7 +155,6 @@ fn compute_band_points(
     custom_p90: Option<f64>,
     custom_p25: Option<f64>,
     custom_p75: Option<f64>,
-    historic_data: &[PricePoint],
 ) -> Vec<ModelPoint> {
     let sigma = residual_std_dev(residuals);
     let two_sigma = sigma * 2.0;
@@ -189,22 +180,11 @@ fn compute_band_points(
     let mut points = Vec::new();
 
     for year in first_year..=projection_end {
-        let days = year_to_days(year);
-        let jan1_ms = {
-            let unix_seconds = ((year - 1970) as f64 * 365.25 * SECONDS_PER_DAY) as i64;
-            unix_seconds * 1000
-        };
+        let days = days_to_jan1(year);
+        let jan1_ms = jan1_timestamp(year);
 
         let median_log = compute_median_log_price(a, b, days, formulation);
         let median = pow10(median_log);
-
-        let has_historic = historic_data.iter().any(|p| {
-            let p_year = {
-                let p_days = days_since_genesis(p.timestamp_ms);
-                2009 + (p_days / 365.25).floor() as i32
-            };
-            p_year == year
-        });
 
         let mut point = ModelPoint {
             year,
@@ -220,7 +200,7 @@ fn compute_band_points(
             band_p75: None,
         };
 
-        if !has_historic || sigma > 0.0 {
+        if sigma > 0.0 {
             match band_style {
                 BandStyle::OneSigma => {
                     point.band_1sigma_low = Some(pow10(median_log - sigma));
@@ -295,7 +275,6 @@ pub fn run_power_law(
         config.custom_p90,
         config.custom_p25,
         config.custom_p75,
-        &historic_data,
     );
 
     Ok(PowerLawResult {
@@ -420,7 +399,7 @@ mod tests {
         let tolerance = 0.05;
         for point in &result.points {
             if point.year == 2024 {
-                let expected_log = 5.84 * log10(year_to_days(2024)) + (-17.3);
+                let expected_log = 5.84 * log10(days_to_jan1(2024)) + (-17.3);
                 let expected = pow10(expected_log);
                 let diff = (point.median_price_usd - expected).abs() / expected;
                 assert!(diff < tolerance, "Custom params: year 2024 price mismatch: got {}, expected {}", point.median_price_usd, expected);
