@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-08-21
+
+- Fix custom percentile bands bug: stop double-dividing percentiles by 100 in TS, use `percentile()` lookup in Rust
+- Extract duplicated Power Law / S2F regression code into shared `stats.rs` module
+- Debounce WASM initialization and scope the Vite fs allow list to `wasm/pkg`
+- Add UI disclaimer and hardened API response validation (response shape + price point checks)
+- Add Content-Security-Policy meta header
+- Migrate historic price data source from CryptoCompare to Binance daily klines (batched fetch back to genesis)
+- Add stale-cache detection with last-updated date and a manual Refresh button
+- Implement Phase 5: Bitcoin24 (MSTR CAGR) price model in Rust — `log10 price ~ years since genesis` regression with ±1σ confidence bands
+- Export the model via WASM bindings (`run_bitcoin24_wasm`) and wire Bitcoin24Controls into the model selector with an orange overlay
+- Update tests for the three-model state and the new API client
+- Adopt the OpenSpec workflow (`openspec/` config + change proposals, `.claude/` commands and skills)
+
 ## 2026-05-18
 
 - Add Phase 4 specs: S2F price model requirements, plan, and validation
