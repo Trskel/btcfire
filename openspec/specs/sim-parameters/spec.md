@@ -11,7 +11,11 @@ The system SHALL define a simulation parameter set with five fields: initial BTC
 
 #### Scenario: Default parameter set
 - **WHEN** the app loads with no saved parameters
-- **THEN** the parameter panel shows defaults of 1 BTC holdings, retirement start year = current year + 10, current age 35, lifespan 90, and annual spending 50,000
+- **THEN** the parameter panel shows defaults of 1 BTC holdings, retirement start year = current year, current age 35, lifespan 90, minimum annual spending 20,000, and desired annual spending 50,000
+
+#### Scenario: Parameter bounds
+- **WHEN** any parameter value is committed
+- **THEN** values are constrained to the bounds: BTC holdings 0–21,000,000, retirement start year current year–current year + 100, current age 1–100, lifespan 50–120, minimum annual spending 0–250,000, desired annual spending 0–10,000,000
 
 #### Scenario: Out-of-bounds values rejected
 - **WHEN** a value outside a field's bounds is supplied (via input or restored storage)
