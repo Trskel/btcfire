@@ -1,20 +1,50 @@
 schema: spec-driven
 
-# Project context (optional)
+# Project context
 # This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  # BTCFire
+
+  Client-side Bitcoin retirement simulator. It answers: "If I hold X bitcoin and
+  retire in year Y, will I be okay?" Runs thousands of Monte Carlo simulations
+  across different price models and withdrawal strategies, presenting results as
+  probabilities and visualizations. Everything runs in the browser — no server,
+  no accounts, no telemetry.
+
+  ## Core principles
+  - Privacy first: all computation client-side, financial data never leaves the machine.
+  - Honest uncertainty: distributions and probabilities, never single-point predictions.
+  - Speed: Monte Carlo runs in Rust/WASM, results update in real time as sliders move.
+  - Mobile first: fully usable at 375px, no horizontal scrolling, 44px touch targets.
+  - Educate, don't prescribe: explain model assumptions; not financial advice.
+
+  ## Tech stack
+  - Monorepo: `wasm/` (Rust crate, wasm-pack + wasm-bindgen + serde + rand) and
+    `web/` (React + TypeScript + Vite + Tailwind + shadcn/ui + ECharts).
+  - WASM integration via `vite-plugin-wasm` + `vite-plugin-top-level-await`.
+  - Historic BTC prices from CoinGecko free tier, cached in localStorage with 24h TTL.
+  - Rust code layout: `wasm/src/models/` (price models), `wasm/src/strategies/`
+    (withdrawal strategies), `wasm/src/simulation/` (Monte Carlo), `wasm/src/data/`
+    (PricePoint type).
+  - Web code layout: `web/src/components/` (ui/, charts/, controls/, tables/),
+    `web/src/hooks/`, `web/src/lib/` (WASM bindings, api client), `web/src/types/`.
+
+  ## Conventions
+  - Tests: Rust via `wasm-pack test --node`; React via Vitest + Testing Library.
+    Root `npm test` runs both. No E2E browser tests.
+  - Mobile-first responsive design with Tailwind breakpoints (default < 640px is
+    the primary target).
+  - Light/dark themes via CSS custom properties (shadcn pattern), persisted in
+    localStorage.
+
+  ## Spec history (manual phase specs)
+  The `specs/` directory holds the pre-OpenSpec project constitution:
+  `specs/mission.md`, `specs/roadmap.md`, `specs/tech-stack.md`, and per-phase
+  folders with requirements/plan/validation for phases 1–4. The roadmap's
+  remaining phases (6–15) are the backlog; each becomes an OpenSpec change
+  proposal when work on it starts.
 
 # Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+# rules:
+#   proposal:
+#     - Keep proposals under 500 words
