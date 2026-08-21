@@ -61,6 +61,27 @@ vi.mock('btcfire-wasm', () => ({
       a: 3.5,
       b: 1.2,
     }),
+  run_bitcoin24_wasm: () =>
+    Promise.resolve({
+      points: [
+        {
+          year: 2024,
+          timestamp_ms: 1704067200000,
+          median_price_usd: 50000,
+          band_1sigma_low: 8000,
+          band_1sigma_high: 280000,
+          band_2sigma_low: null,
+          band_2sigma_high: null,
+          band_p10: null,
+          band_p90: null,
+          band_p25: null,
+          band_p75: null,
+        },
+      ],
+      rSquared: 0.92,
+      a: 0.35,
+      b: 2.5,
+    }),
 }))
 
 vi.mock('@/hooks/useHistoricPrices', () => ({
@@ -123,12 +144,13 @@ describe('App', () => {
     expect(screen.getByText('Price Models')).toBeInTheDocument()
     expect(screen.getAllByText('Power Law').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('S2F').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Bitcoin24').length).toBeGreaterThanOrEqual(1)
   })
 
   it('Power Law is checked and expanded by default', () => {
     render(<App />)
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[]
-    expect(checkboxes).toHaveLength(2)
+    expect(checkboxes).toHaveLength(3)
     expect(checkboxes[0]).toBeChecked()
     expect(checkboxes[1]).not.toBeChecked()
   })

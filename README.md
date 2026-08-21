@@ -25,7 +25,7 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
   <strong>Historic BTC price</strong> → <strong>Price model projection</strong> → <strong>Monte Carlo simulation</strong> → <strong>Retirement outcome probability</strong>
 </p>
 
-1. **Fetch historic data** — BTC daily price history from a public API, cached locally.
+1. **Fetch historic data** — BTC daily price history from Binance's public API (daily klines fetched in batches back to genesis), cached locally with stale-cache detection.
 2. **Fit a price model** — Power Law regression, Stock-to-Flow, or configurable custom parameters, extended decades into the future with statistical confidence bands.
 3. **Define your stack** — BTC holdings, annual spending, inflation rate, retirement timeline.
 4. **Choose a withdrawal strategy** — Classic FIRE (fixed real spending), Guardrails (adaptive spending), Buy-Borrow-Die (leverage instead of selling).
@@ -39,17 +39,18 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 | ✅ | Interactive BTC price history chart (ECharts, log/linear, pan/zoom) |
 | ✅ | Power Law price model (log-log fit, power fit, custom parameters) |
 | ✅ | Stock-to-Flow (S2F) price model (log price ~ log S2F regression) |
+| ✅ | Bitcoin24 price model (CAGR regression, ±1σ confidence bands) |
 | ✅ | Checkbox visibility controls — show multiple model overlays on the chart simultaneously |
 | ✅ | Shared projection horizon slider — one control for all models |
 | ✅ | Expandable controls panels per model with auto-expand on check |
 | ✅ | Configurable confidence bands (±1σ, ±2σ, custom percentiles) |
+| ✅ | Binance historic price data (batched fetch, stale-cache detection, manual refresh) |
 | ✅ | WASM-powered model fitting — sub-millisecond recomputation |
 | ✅ | Full Power Law controls: formulation, band style, projection horizon slider |
 | ✅ | Reactive model overlay on the chart — no "Run" button needed |
 | ✅ | Light / dark theme with system preference detection |
 | ✅ | Mobile-first responsive design (usable at 375px) |
 | ✅ | Full test suite: Rust unit tests + React component tests + integration |
-| 🚧 | Bitcoin24 price model (Phase 5) |
 | 🚧 | Withdrawal strategies (Phase 7–12) |
 | 🚧 | Monte Carlo engine and results dashboard (Phase 9–10) |
 | 🚧 | Scenario comparison (Phase 13) |
@@ -57,7 +58,7 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 ## 🔒 Privacy by Design
 
 - **Everything runs client-side.** Your financial data — holdings, spending, age — never leaves your browser.
-- **No accounts, no servers, no telemetry, no analytics.** The site sends exactly two network requests: fetching historic BTC prices from a public API, and loading the static app bundle. That's it.
+- **No accounts, no servers, no telemetry, no analytics.** The site sends exactly two network requests: fetching historic BTC prices from Binance's public API, and loading the static app bundle. That's it.
 - **Local storage only.** Your configuration parameters are saved to `localStorage` for convenience across sessions. You can clear them anytime.
 - **Verifiable privacy.** The entire application is static HTML/CSS/JS/WASM. You can audit the network tab in DevTools and see there's nothing phoning home.
 
@@ -169,6 +170,8 @@ cd web && npm run build
 ```
 btcfire/
 ├── specs/                 # Project spec documents (mission, roadmap, tech stack)
+├── openspec/              # OpenSpec change proposals (design, delta specs, tasks)
+├── .claude/               # Claude Code commands and skills for the OpenSpec workflow
 ├── wasm/                  # Rust/WASM simulation engine
 │   ├── Cargo.toml
 │   └── src/
@@ -209,6 +212,8 @@ specs/YYYY-MM-DD-feature-name/
 
 This practice eliminates the most common cause of project failure: building the wrong thing because nobody wrote down what "done" looks like. The specs are the contract between intent and implementation.
 
+New changes are managed with the **OpenSpec** workflow: each change lives in `openspec/changes/<change-id>/` with a proposal, design notes, delta specs, and a task list, and is driven by Claude Code commands and skills in `.claude/` (`/opsx:propose`, `/opsx:apply`, `/opsx:archive`).
+
 ## 🎯 Design Philosophy
 
 - **Honesty over hype.** Bitcoin's future is unknowable. BTCFire shows probability distributions, not confident single-point predictions buried in fine print.
@@ -224,7 +229,7 @@ This practice eliminates the most common cause of project failure: building the 
 | 2 | Historic BTC price data + interactive chart | ✅ Done |
 | 3 | Power Law price model + chart overlay | ✅ Done |
 | 4 | Stock-to-Flow price model | ✅ Done |
-| 5 | Bitcoin24 price model | 🚧 Planned |
+| 5 | Bitcoin24 price model | ✅ Done |
 | 6 | User stack configuration | 🚧 Planned |
 | 7–8 | Withdrawal strategies (Classic FIRE, Fixed %) | 🚧 Planned |
 | 9–10 | Monte Carlo engine + Results dashboard | 🚧 Planned |
