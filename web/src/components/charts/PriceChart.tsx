@@ -387,6 +387,7 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
       <ReactEChartsCore
         echarts={echarts}
         option={option}
+        replaceMerge={['series']}
         style={{ width: '100%', height: '400px' }}
         className="md:!h-[500px] lg:!h-[600px]"
         ref={chartRef}

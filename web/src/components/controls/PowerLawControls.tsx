@@ -3,6 +3,7 @@ import type { PowerLawConfig, PowerLawResult, Formulation, BandStyle } from '@/t
 import { toModelOverlay } from '@/types/models'
 import type { ModelOverlay } from '@/types/models'
 import type { PricePoint } from '@/types/price'
+import type { SimulationParams } from '@/types/simulation'
 import { run_power_law_wasm } from 'btcfire-wasm'
 import { ensureWasm } from '@/lib/wasm'
 
@@ -14,6 +15,7 @@ function parseFiniteFloat(val: string, fallback: number): number {
 interface PowerLawControlsProps {
   historicData: PricePoint[]
   projectionYears: number
+  simParams: SimulationParams
   onModelChange: (overlay: ModelOverlay | null) => void
 }
 

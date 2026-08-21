@@ -3,12 +3,14 @@ import type { Bitcoin24Config, Bitcoin24Result } from '@/types/models'
 import { toModelOverlay } from '@/types/models'
 import type { ModelOverlay } from '@/types/models'
 import type { PricePoint } from '@/types/price'
+import type { SimulationParams } from '@/types/simulation'
 import { run_bitcoin24_wasm } from 'btcfire-wasm'
 import { ensureWasm } from '@/lib/wasm'
 
 interface Bitcoin24ControlsProps {
   historicData: PricePoint[]
   projectionYears: number
+  simParams: SimulationParams
   onModelChange: (overlay: ModelOverlay | null) => void
 }
 
