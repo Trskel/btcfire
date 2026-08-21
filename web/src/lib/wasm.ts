@@ -1,5 +1,8 @@
-import 'btcfire-wasm'
+import init from 'btcfire-wasm'
 
-export async function ensureWasm() {
-  // WASM module auto-initializes on import
+let initPromise: Promise<unknown> | null = null
+
+export function ensureWasm() {
+  initPromise ??= init()
+  return initPromise
 }
