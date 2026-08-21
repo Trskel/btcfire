@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { ParameterPanel } from '@/components/controls/ParameterPanel'
 import { ParameterInput } from '@/components/controls/ParameterInput'
-import { defaultSimulationParams } from '@/types/simulation'
+import { defaultSimulationParams, PARAM_BOUNDS } from '@/types/simulation'
 import type { SimulationParams } from '@/types/simulation'
 import { useSimulationParams, SIM_PARAMS_STORAGE_KEY } from '@/hooks/useSimulationParams'
 
@@ -25,8 +25,8 @@ describe('ParameterInput', () => {
         label="Initial BTC holdings"
         value={1}
         displayValue="1 BTC"
-        min={0}
-        max={21000000}
+        min={PARAM_BOUNDS.holdingsBtc.min}
+        max={PARAM_BOUNDS.holdingsBtc.max}
         formatValue={(v) => v.toFixed(8).replace(/\.?0+$/, '')}
         onChange={onChange}
       />,
@@ -47,8 +47,8 @@ describe('ParameterInput', () => {
         label="Initial BTC holdings"
         value={1}
         displayValue="1 BTC"
-        min={0}
-        max={21000000}
+        min={PARAM_BOUNDS.holdingsBtc.min}
+        max={PARAM_BOUNDS.holdingsBtc.max}
         formatValue={(v) => v.toFixed(8).replace(/\.?0+$/, '')}
         onChange={onChange}
       />,
@@ -59,7 +59,7 @@ describe('ParameterInput', () => {
     })
     fireEvent.change(input, { target: { value: '999999999' } })
 
-    expect(onChange).toHaveBeenCalledWith(21000000)
+    expect(onChange).toHaveBeenCalledWith(PARAM_BOUNDS.holdingsBtc.max)
   })
 
   it('supports 8 decimals', () => {
@@ -69,8 +69,8 @@ describe('ParameterInput', () => {
         label="Initial BTC holdings"
         value={0.12345678}
         displayValue="0.12345678 BTC"
-        min={0}
-        max={21000000}
+        min={PARAM_BOUNDS.holdingsBtc.min}
+        max={PARAM_BOUNDS.holdingsBtc.max}
         formatValue={(v) => v.toFixed(8).replace(/\.?0+$/, '')}
         onChange={onChange}
       />,
