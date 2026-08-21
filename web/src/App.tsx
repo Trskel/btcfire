@@ -8,11 +8,14 @@ import { Bitcoin24Controls } from '@/components/controls/Bitcoin24Controls'
 import { ModelSelector } from '@/components/controls/ModelSelector'
 import type { ModelEntry } from '@/components/controls/ModelSelector'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
+import { ParameterPanel } from '@/components/controls/ParameterPanel'
 import { useHistoricPrices } from '@/hooks/useHistoricPrices'
+import { useSimulationParams } from '@/hooks/useSimulationParams'
 import type { ModelOverlay, ModelId } from '@/types/models'
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
+  const { params: simParams, setParam: setSimParam } = useSimulationParams()
   const [modelOverlays, setModelOverlays] = useState<Record<ModelId, ModelOverlay | null>>({
     'power-law': null,
     's2f': null,
@@ -69,6 +72,7 @@ function App() {
           <PowerLawControls
             historicData={data}
             projectionYears={projectionYears}
+            simParams={simParams}
             onModelChange={(overlay) => handleModelChange('power-law', overlay)}
           />
         ),
@@ -81,6 +85,7 @@ function App() {
           <S2FControls
             historicData={data}
             projectionYears={projectionYears}
+            simParams={simParams}
             onModelChange={(overlay) => handleModelChange('s2f', overlay)}
           />
         ),
@@ -93,12 +98,13 @@ function App() {
           <Bitcoin24Controls
             historicData={data}
             projectionYears={projectionYears}
+            simParams={simParams}
             onModelChange={(overlay) => handleModelChange('bitcoin24', overlay)}
           />
         ),
       },
     ]
-  }, [data, projectionYears, handleModelChange])
+  }, [data, projectionYears, simParams, handleModelChange])
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 md:px-8 lg:px-16">
@@ -112,8 +118,23 @@ function App() {
         <ThemeToggle />
       </header>
 
-      <main className="space-y-6">
-        <Card>
+      <main className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-80">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Scenario</CardTitle>
+              <CardDescription>
+                Personalize the retirement simulation
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ParameterPanel params={simParams} onParamChange={setSimParam} />
+            </CardContent>
+          </Card>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -211,13 +232,14 @@ function App() {
             </p>
           </CardContent>
         </Card>
-
-        <footer className="mt-8 border-t border-border pt-4">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            <strong>Disclaimer:</strong> BTCFire is a simulation tool for educational and planning purposes only. It is not financial advice. Past performance of any asset does not predict future results. All price models make assumptions that may prove wrong. Cryptocurrency is volatile — you could lose everything. Consult a qualified financial advisor before making retirement decisions.
-          </p>
-        </footer>
+        </div>
       </main>
+
+      <footer className="mt-8 border-t border-border pt-4">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <strong>Disclaimer:</strong> BTCFire is a simulation tool for educational and planning purposes only. It is not financial advice. Past performance of any asset does not predict future results. All price models make assumptions that may prove wrong. Cryptocurrency is volatile — you could lose everything. Consult a qualified financial advisor before making retirement decisions.
+        </p>
+      </footer>
     </div>
   )
 }
