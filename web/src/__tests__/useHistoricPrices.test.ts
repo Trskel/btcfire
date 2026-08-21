@@ -8,7 +8,7 @@ const mockPrices: PricePoint[] = [
   { timestamp_ms: 1367193600000, price_usd: 141.96 },
 ]
 
-vi.mock('@/lib/api/cryptocompare', () => ({
+vi.mock('@/lib/api/coingecko', () => ({
   fetchBtcPriceHistory: vi.fn(),
 }))
 
@@ -18,7 +18,7 @@ vi.mock('@/lib/cache/priceCache', () => ({
   setCachedPrices: vi.fn(),
 }))
 
-import { fetchBtcPriceHistory } from '@/lib/api/cryptocompare'
+import { fetchBtcPriceHistory } from '@/lib/api/coingecko'
 import { getCachedPrices, getStaleCachedPrices } from '@/lib/cache/priceCache'
 
 const mockFetch = vi.mocked(fetchBtcPriceHistory)

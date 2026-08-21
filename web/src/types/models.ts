@@ -16,7 +16,7 @@ export type Formulation = 'log_log' | 'power_fit' | 'custom'
 
 export type BandStyle = '1sigma' | '1sigma_2sigma' | 'custom_percentiles'
 
-export type ModelId = 'power-law' | 's2f'
+export type ModelId = 'power-law' | 's2f' | 'bitcoin24'
 
 export interface PowerLawConfig {
   formulation: Formulation
@@ -49,6 +49,17 @@ export interface S2FResult {
   b: number
 }
 
+export interface Bitcoin24Config {
+  projectionYears: number
+}
+
+export interface Bitcoin24Result {
+  points: ModelPoint[]
+  rSquared: number
+  a: number
+  b: number
+}
+
 export interface ModelOverlay {
   modelId: ModelId
   median: [number, number][]
@@ -68,14 +79,16 @@ export interface ModelOverlay {
 export const MODEL_COLORS: Record<ModelId, string> = {
   'power-law': '#eab308',
   's2f': '#0694a2',
+  'bitcoin24': '#f97316',
 }
 
 export const MODEL_LABELS: Record<ModelId, string> = {
   'power-law': 'Power Law',
   's2f': 'S2F',
+  'bitcoin24': 'Bitcoin24',
 }
 
-export function toModelOverlay(result: PowerLawResult | S2FResult, modelId: ModelId): ModelOverlay {
+export function toModelOverlay(result: PowerLawResult | S2FResult | Bitcoin24Result, modelId: ModelId): ModelOverlay {
   const today = Date.now()
 
   const median: [number, number][] = result.points.map((p) => [
@@ -92,7 +105,7 @@ export function toModelOverlay(result: PowerLawResult | S2FResult, modelId: Mode
     modelId,
     median,
     todayTimestamp: today,
-    formulation: 'formulationUsed' in result ? (result as PowerLawResult).formulationUsed : 's2f',
+    formulation: 'formulationUsed' in result ? (result as PowerLawResult).formulationUsed : 'cagr',
     rSquared: result.rSquared,
   }
 

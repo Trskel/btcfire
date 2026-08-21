@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { PriceChart } from '@/components/charts/PriceChart'
 import { PowerLawControls } from '@/components/controls/PowerLawControls'
 import { S2FControls } from '@/components/controls/S2FControls'
+import { Bitcoin24Controls } from '@/components/controls/Bitcoin24Controls'
 import { ModelSelector } from '@/components/controls/ModelSelector'
 import type { ModelEntry } from '@/components/controls/ModelSelector'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
@@ -15,6 +16,7 @@ function App() {
   const [modelOverlays, setModelOverlays] = useState<Record<ModelId, ModelOverlay | null>>({
     'power-law': null,
     's2f': null,
+    'bitcoin24': null,
   })
   const [visibleModels, setVisibleModels] = useState<Set<ModelId>>(
     new Set<ModelId>(['power-law']),
@@ -83,6 +85,18 @@ function App() {
           />
         ),
       },
+      {
+        id: 'bitcoin24' as ModelId,
+        label: 'Bitcoin24 (CAGR)',
+        shortLabel: 'Bitcoin24',
+        controls: (
+          <Bitcoin24Controls
+            historicData={data}
+            projectionYears={projectionYears}
+            onModelChange={(overlay) => handleModelChange('bitcoin24', overlay)}
+          />
+        ),
+      },
     ]
   }, [data, projectionYears, handleModelChange])
 
@@ -110,10 +124,19 @@ function App() {
                     : error
                       ? 'Failed to load'
                       : isStale
-                        ? 'Using cached data (API unavailable)'
+                        ? `Using cached data (last updated ${data?.[data.length - 1]?.timestamp_ms ? new Date(data[data.length - 1].timestamp_ms).toLocaleDateString() : 'unknown'})`
                         : `${data?.length.toLocaleString()} days of data`}
                 </CardDescription>
               </div>
+              {isStale && (
+                <Button
+                  size="sm"
+                  className="min-h-[36px] text-xs"
+                  onClick={refresh}
+                >
+                  Refresh
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>

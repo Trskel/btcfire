@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { PricePoint } from '@/types/price'
-import { fetchBtcPriceHistory } from '@/lib/api/cryptocompare'
+import { fetchBtcPriceHistory } from '@/lib/api/coingecko'
 import {
   getCachedPrices,
   getStaleCachedPrices,
