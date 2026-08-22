@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { useState } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { WithdrawalResults } from '@/components/controls/WithdrawalResults'
 import type { PathId, WithdrawalRun } from '@/lib/withdrawal'
 import type { YearResult } from '@/types/policy'
@@ -30,12 +31,14 @@ function makeRun(): WithdrawalRun {
         pathId: 'median',
         name: 'Medium',
         label: 'fair',
+        finalPriceUsd: 223800,
         results: [yearResult(2030, 0.96, 4000), yearResult(2031, 0.92, 4120)],
       },
       {
         pathId: 'minus_1s',
         name: 'Bearish',
         label: '−1σ',
+        finalPriceUsd: 100000,
         results: [
           yearResult(2030, 0.5, 3000, 'bear'),
           yearResult(2031, 0, 0, 'bear', 0),
@@ -45,6 +48,7 @@ function makeRun(): WithdrawalRun {
         pathId: 'plus_2s',
         name: 'Deep bull',
         label: '+2σ',
+        finalPriceUsd: 500000,
         results: [
           yearResult(2030, 1.4, 6000, 'euphoria'),
           yearResult(2031, 1.8, 6200, 'euphoria'),
@@ -84,6 +88,21 @@ describe('WithdrawalResults', () => {
   it('shows a depletion summary for a depleted path', () => {
     render(<Harness run={makeRun()} />)
     expect(screen.getByText('Depleted 2031 · Bear')).toBeInTheDocument()
+  })
+
+  it('shows the dollar value of the BTC left under the summary line', () => {
+    render(<Harness run={makeRun()} />)
+    expect(screen.getByText('≈ $205,896')).toBeInTheDocument()
+    expect(screen.getByText('≈ $900,000')).toBeInTheDocument()
+  })
+
+  it('does not show a dollar value for depleted paths', () => {
+    render(<Harness run={makeRun()} />)
+    const dollarLines = screen
+      .getAllByText(/^≈ \$/)
+      .map((el) => el.textContent)
+    expect(dollarLines).toHaveLength(2)
+    expect(dollarLines).not.toContain('≈ $0')
   })
 
   it('renders the truncation note when the projection ends early', () => {
@@ -141,5 +160,32 @@ describe('WithdrawalResults', () => {
     expect(
       screen.getByText('Model projection does not include retirement year 2030'),
     ).toBeInTheDocument()
+  })
+
+  it('shows info buttons for price paths and the phase column', async () => {
+    const user = userEvent.setup()
+    render(<Harness run={makeRun()} />)
+
+    expect(
+      screen.getByRole('button', { name: 'About Price paths' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Phase' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'About Price paths' }))
+    expect(screen.getByText(/P10 is pessimistic/)).toBeInTheDocument()
+  })
+
+  it('opening an info popover does not change the selected path', async () => {
+    const user = userEvent.setup()
+    render(<Harness run={makeRun()} />)
+
+    await user.click(screen.getByRole('button', { name: 'About Price paths' }))
+
+    expect(screen.getByText('0.92 BTC left · Fair')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Medium/ }).getAttribute('aria-pressed'),
+    ).toBe('true')
   })
 })

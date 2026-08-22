@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { useState } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { WithdrawalTab } from '@/components/controls/WithdrawalTab'
 import {
   defaultPolicy,
@@ -37,7 +38,9 @@ describe('WithdrawalTab', () => {
     render(<Harness />)
     for (const id of Object.keys(PRESET_LABELS) as PresetId[]) {
       expect(
-        screen.getByRole('button', { name: new RegExp(PRESET_LABELS[id]) }),
+        screen.getByRole('button', {
+          name: new RegExp(`^${PRESET_LABELS[id]}`),
+        }),
       ).toBeInTheDocument()
     }
   })
@@ -61,7 +64,7 @@ describe('WithdrawalTab', () => {
 
   it('selecting the Guardrails preset prefills and reveals guardrail knobs', () => {
     render(<Harness />)
-    fireEvent.click(screen.getByRole('button', { name: /Guardrails/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^Guardrails/ }))
 
     expect(screen.getByLabelText('Ceiling threshold value')).toBeInTheDocument()
     const ceiling = screen.getByLabelText(
@@ -128,5 +131,92 @@ describe('WithdrawalTab', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fixed %/ }))
     const fixedButton = screen.getByRole('button', { name: /Fixed %/ })
     expect(fixedButton.querySelector('[aria-label="modified"]')).toBeNull()
+  })
+
+  it('shows info buttons for sections and knobs with non-empty descriptions', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    const visibleLabels = [
+      'Anchor',
+      'Withdrawal rate',
+      'Payout frequency',
+      'Review cadence',
+      'Guardrails',
+      'Cash buffer',
+      'Valuation-based selling',
+    ]
+    for (const label of visibleLabels) {
+      expect(
+        screen.getByRole('button', { name: `About ${label}` }),
+      ).toBeInTheDocument()
+    }
+    expect(
+      screen.getByRole('button', { name: 'About Anchor section' }),
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Withdrawal rate' }),
+    )
+    expect(screen.getByText(/percentage of your bitcoin/)).toBeInTheDocument()
+  })
+
+  it('shows info buttons for guardrail knobs when enabled', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('switch', { name: 'Guardrails' }))
+
+    expect(
+      screen.getByRole('button', { name: 'About Ceiling threshold' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Floor threshold' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Adjustment size' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Prosperity rule' }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows info buttons for valuation knobs when enabled', () => {
+    render(<Harness />)
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Valuation-based selling' }),
+    )
+
+    for (const label of [
+      'Indicator',
+      'Fair phase low',
+      'Fair phase high',
+      'Bear surplus',
+      'Fair surplus',
+      'Euphoria surplus',
+      'Safety valve',
+      'Buffer onboarding',
+    ]) {
+      expect(
+        screen.getByRole('button', { name: `About ${label}` }),
+      ).toBeInTheDocument()
+    }
+  })
+
+  it('opening an info popover does not toggle switches or change knobs', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Valuation-based selling' }),
+    )
+    expect(
+      screen.getByText(/Sells more or less depending on where the price sits/),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('switch', { name: 'Valuation-based selling' }),
+    ).not.toBeChecked()
+    expect(
+      screen.queryByLabelText('Fair phase low value'),
+    ).not.toBeInTheDocument()
   })
 })

@@ -1,4 +1,5 @@
 import { useCallback, useId, useState } from 'react'
+import { InfoButton } from '@/components/ui/info-button'
 
 interface ParameterInputProps {
   label: string
@@ -8,6 +9,7 @@ interface ParameterInputProps {
   max: number
   formatValue: (value: number) => string
   onChange: (value: number) => void
+  info?: string
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -22,6 +24,7 @@ export function ParameterInput({
   max,
   formatValue,
   onChange,
+  info,
 }: ParameterInputProps) {
   const [draft, setDraft] = useState<string | null>(null)
   const id = useId()
@@ -55,12 +58,15 @@ export function ParameterInput({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <label
-          htmlFor={id}
-          className="text-xs font-medium text-muted-foreground"
-        >
-          {label}
-        </label>
+        <span className="flex items-center gap-1">
+          <label
+            htmlFor={id}
+            className="text-xs font-medium text-muted-foreground"
+          >
+            {label}
+          </label>
+          {info && <InfoButton label={label} description={info} />}
+        </span>
         <span
           className="text-xs tabular-nums text-muted-foreground/60"
           aria-hidden="true"

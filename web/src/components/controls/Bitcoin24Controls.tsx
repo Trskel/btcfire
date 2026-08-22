@@ -6,6 +6,8 @@ import type { PricePoint } from '@/types/price'
 import type { SimulationParams } from '@/types/simulation'
 import { run_bitcoin24_wasm } from 'btcfire-wasm'
 import { ensureWasm } from '@/lib/wasm'
+import { InfoButton } from '@/components/ui/info-button'
+import { FIT_INFO } from '@/content/info'
 
 interface Bitcoin24ControlsProps {
   historicData: PricePoint[]
@@ -65,13 +67,14 @@ export function Bitcoin24Controls({
       )}
 
       {result && (
-        <div className="space-y-1">
+        <div className="flex items-center gap-1">
           <p className="text-xs text-muted-foreground">
             R² = {result.rSquared.toFixed(4)} | CAGR slope = {result.a.toFixed(6)} | intercept = {result.b.toFixed(2)}
           </p>
-          <p className="text-xs text-muted-foreground/60">
-            R² measures fit to past data only — it does not predict future accuracy.
-          </p>
+          <InfoButton
+            label="R² fit statistic"
+            description={FIT_INFO.rSquared}
+          />
         </div>
       )}
 

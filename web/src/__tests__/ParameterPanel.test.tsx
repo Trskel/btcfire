@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ParameterPanel } from '@/components/controls/ParameterPanel'
 import { ParameterInput } from '@/components/controls/ParameterInput'
 import { defaultSimulationParams, PARAM_BOUNDS } from '@/types/simulation'
@@ -103,6 +104,51 @@ describe('ParameterPanel', () => {
     expect(screen.getByText('3.0%')).toBeInTheDocument()
 
     expect(screen.getAllByRole('spinbutton')).toHaveLength(7)
+  })
+
+  it('shows an info button with a non-empty description for each field', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+
+    const labels = [
+      'Initial BTC holdings',
+      'Retirement start year',
+      'Current age',
+      'Expected lifespan',
+      'Minimum annual spending',
+      'Desired annual spending',
+      'Annual inflation rate',
+    ]
+
+    for (const label of labels) {
+      const button = screen.getByRole('button', { name: `About ${label}` })
+      expect(button).toBeInTheDocument()
+    }
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Annual inflation rate' }),
+    )
+    expect(
+      screen.getByText(/Assumed yearly rise in your spending/),
+    ).toBeInTheDocument()
+  })
+
+  it('opening an info popover does not change parameter values', async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderPanel()
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Initial BTC holdings' }),
+    )
+    expect(
+      screen.getByText(/How many bitcoins you hold today/),
+    ).toBeInTheDocument()
+    expect(onChange).not.toHaveBeenCalled()
+
+    const input = screen.getByRole('spinbutton', {
+      name: 'Initial BTC holdings value',
+    }) as HTMLInputElement
+    expect(input.value).toBe('1')
   })
 
   it('hides the inflation field when showInflation is false', () => {

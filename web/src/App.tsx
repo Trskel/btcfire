@@ -22,6 +22,7 @@ import type { PathId } from '@/lib/withdrawal'
 import type { WithdrawalRun } from '@/lib/withdrawal'
 import type { ModelOverlay, ModelId } from '@/types/models'
 import { MODEL_LABELS } from '@/types/models'
+import { MODEL_INFO } from '@/content/info'
 
 type ControlTab = 'scenario' | 'price-model' | 'withdrawal'
 
@@ -140,6 +141,7 @@ function App() {
         id: 'power-law' as ModelId,
         label: 'Power Law',
         shortLabel: 'Power Law',
+        info: MODEL_INFO['power-law'],
         controls: (
           <PowerLawControls
             historicData={data}
@@ -153,6 +155,7 @@ function App() {
         id: 's2f' as ModelId,
         label: 'Stock-to-Flow (S2F)',
         shortLabel: 'S2F',
+        info: MODEL_INFO.s2f,
         controls: (
           <S2FControls
             historicData={data}
@@ -166,6 +169,7 @@ function App() {
         id: 'bitcoin24' as ModelId,
         label: 'Bitcoin24 (CAGR)',
         shortLabel: 'Bitcoin24',
+        info: MODEL_INFO.bitcoin24,
         controls: (
           <Bitcoin24Controls
             historicData={data}
