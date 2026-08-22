@@ -57,6 +57,17 @@ function makeRun(): WithdrawalRun {
     ],
     coveredYears: 2,
     totalYears: 55,
+    monteCarlo: {
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 20.0,
+        belowMinPct: 10.0,
+        successPct: 70.0,
+        desiredSpendPct: 80.0,
+      },
+      percentiles: [],
+    },
   }
 }
 
@@ -160,6 +171,70 @@ describe('WithdrawalResults', () => {
     expect(
       screen.getByText('Model projection does not include retirement year 2030'),
     ).toBeInTheDocument()
+  })
+
+  it('renders the Monte Carlo summary first with the four metrics', () => {
+    render(<Harness run={makeRun()} />)
+    const results = screen.getAllByText('70.0%')
+    expect(results.length).toBeGreaterThan(0)
+
+    expect(screen.getByText('Monte Carlo outcomes')).toBeInTheDocument()
+    expect(screen.getByText('Ran out of money')).toBeInTheDocument()
+    expect(screen.getByText('Below minimum spending')).toBeInTheDocument()
+    expect(screen.getByText('Success')).toBeInTheDocument()
+    expect(screen.getByText('Time at desired spend')).toBeInTheDocument()
+    expect(screen.getByText('20.0%')).toBeInTheDocument()
+    expect(screen.getByText('10.0%')).toBeInTheDocument()
+    expect(screen.getByText('80.0%')).toBeInTheDocument()
+
+    const summaryNode = screen.getByText('Monte Carlo outcomes').closest('div')
+    const stripNode = screen.getByRole('group', { name: 'Price paths' })
+    expect(
+      summaryNode!.compareDocumentPosition(stripNode) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('shows an em dash for the desired-spend metric when it is null', () => {
+    const run = makeRun()
+    run.monteCarlo = {
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 100.0,
+        belowMinPct: 0.0,
+        successPct: 0.0,
+        desiredSpendPct: null,
+      },
+      percentiles: [],
+    }
+    render(<Harness run={run} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+    expect(screen.queryByText('80.0%')).not.toBeInTheDocument()
+  })
+
+  it('hides the Monte Carlo summary when the horizon is zero', () => {
+    const run = makeRun()
+    run.totalYears = 0
+    render(<Harness run={run} />)
+    expect(screen.queryByText('Monte Carlo outcomes')).not.toBeInTheDocument()
+  })
+
+  it('shows info buttons for each Monte Carlo metric', async () => {
+    const user = userEvent.setup()
+    render(<Harness run={makeRun()} />)
+
+    expect(
+      screen.getByRole('button', { name: 'About Monte Carlo outcomes' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Ran out of money' }),
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Ran out of money' }),
+    )
+    expect(screen.getByText(/stack hit zero/)).toBeInTheDocument()
   })
 
   it('shows info buttons for price paths and the phase column', async () => {

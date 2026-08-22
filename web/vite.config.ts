@@ -15,15 +15,33 @@ function wasmDevWatcher(): Plugin {
       if (process.env.VITEST) return
       const wasmDir = path.resolve(__dirname, '../wasm')
       const runBuild = () =>
-        new Promise<void>((resolve) => {
+        new Promise<void>((resolve, reject) => {
           const build = spawn('wasm-pack', ['build', '--target', 'web'], {
             cwd: wasmDir,
             stdio: 'inherit',
           })
-          build.on('exit', () => resolve())
+          build.on('error', (err) => reject(err))
+          build.on('exit', (code) => {
+            if (code === 0) {
+              resolve()
+            } else {
+              reject(
+                new Error(
+                  `wasm-pack build exited with code ${code}. ` +
+                    'Vite cannot resolve "btcfire-wasm" until it succeeds.',
+                ),
+              )
+            }
+          })
         })
 
-      await runBuild()
+      try {
+        await runBuild()
+      } catch (err) {
+        server.config.logger.error(
+          `wasm build failed — "btcfire-wasm" imports will not resolve: ${(err as Error).message}`,
+        )
+      }
 
       const watcher = spawn(
         'cargo',

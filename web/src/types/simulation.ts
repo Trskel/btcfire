@@ -8,6 +8,29 @@ export interface SimulationParams {
   inflationRate: number
 }
 
+export interface MonteCarloSummary {
+  runOutPct: number
+  belowMinPct: number
+  successPct: number
+  desiredSpendPct: number | null
+}
+
+export interface YearPercentiles {
+  year: number
+  p10: number
+  p25: number
+  p50: number
+  p75: number
+  p90: number
+}
+
+export interface MonteCarloResult {
+  runCount: number
+  seed: number
+  summary: MonteCarloSummary
+  percentiles: YearPercentiles[]
+}
+
 export interface ParamBounds {
   min: number
   max: number

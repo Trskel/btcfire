@@ -45,7 +45,7 @@ impl PathPoint {
     /// Model dispersion in log space, from 1σ bands or — when the model
     /// emits percentile bands instead — derived from symmetric percentile
     /// bands via the normal z-scores.
-    fn sigma(&self) -> Option<f64> {
+    pub(crate) fn sigma(&self) -> Option<f64> {
         if let Some(sigma) = self.sigma_from_pair(self.band_1sigma_low, self.band_1sigma_high, 1.0)
         {
             return Some(sigma);
@@ -126,7 +126,7 @@ fn sell_btc(btc: f64, spend_usd: f64, price: f64) -> (f64, f64) {
     (sold, sold * price)
 }
 
-fn year_map(points: &[PathPoint]) -> BTreeMap<i32, PathPoint> {
+pub(crate) fn year_map(points: &[PathPoint]) -> BTreeMap<i32, PathPoint> {
     let mut map: BTreeMap<i32, PathPoint> = BTreeMap::new();
     for p in points {
         map.insert(p.year, p.clone());
@@ -152,6 +152,19 @@ pub fn run_withdrawal_on_path(
     params: &SimulationParams,
     points: &[PathPoint],
 ) -> Result<Vec<YearResult>, String> {
+    run_withdrawal_on_path_from_state(policy, params, points, None)
+}
+
+/// Deterministic withdrawal simulation over an arbitrary price path, starting
+/// from an arbitrary runtime state (the Monte Carlo engine and the future
+/// "Today" advisor resume simulations mid-flight). `None` initializes from
+/// retirement day.
+pub fn run_withdrawal_on_path_from_state(
+    policy: &WithdrawalPolicy,
+    params: &SimulationParams,
+    points: &[PathPoint],
+    start_state: Option<&RuntimeState>,
+) -> Result<Vec<YearResult>, String> {
     let mut policy = policy.clone();
     policy.clamp();
 
@@ -161,7 +174,9 @@ pub fn run_withdrawal_on_path(
     }
 
     let map = year_map(points);
-    let start = params.retirement_start_year;
+    let start = start_state
+        .map(|s| s.year)
+        .unwrap_or(params.retirement_start_year);
     if !map.contains_key(&start) {
         return Err(format!(
             "Model projection does not include retirement year {}",
@@ -170,9 +185,9 @@ pub fn run_withdrawal_on_path(
     }
 
     if policy.valuation.enabled {
-        run_monthly(&policy, params, &map, horizon)
+        run_monthly(&policy, params, &map, horizon, start_state)
     } else {
-        run_yearly(&policy, params, &map, horizon)
+        run_yearly(&policy, params, &map, horizon, start_state)
     }
 }
 
@@ -230,17 +245,30 @@ fn run_yearly(
     params: &SimulationParams,
     map: &BTreeMap<i32, PathPoint>,
     horizon: usize,
+    start_state: Option<&RuntimeState>,
 ) -> Result<Vec<YearResult>, String> {
-    let start = params.retirement_start_year;
+    let start = start_state
+        .map(|s| s.year)
+        .unwrap_or(params.retirement_start_year);
+    let years_offset = (start - params.retirement_start_year) as f64;
     let first = map
         .get(&start)
         .ok_or_else(|| format!("Model projection does not include retirement year {}", start))?;
-    let initial_portfolio = params.holdings_btc * first.price_usd;
-    let rate = initial_rate(policy, initial_portfolio);
 
-    let mut state = RuntimeState::new(start, params.holdings_btc);
-    state.initial_rate = rate;
-    state.base_spend_usd = initial_base_spend(policy, rate, initial_portfolio);
+    let (mut state, rate, initial_portfolio) = match start_state {
+        Some(s) => {
+            let portfolio = s.btc * first.price_usd;
+            (s.clone(), s.initial_rate, portfolio)
+        }
+        None => {
+            let portfolio = params.holdings_btc * first.price_usd;
+            let rate = initial_rate(policy, portfolio);
+            let mut state = RuntimeState::new(start, params.holdings_btc);
+            state.initial_rate = rate;
+            state.base_spend_usd = initial_base_spend(policy, rate, portfolio);
+            (state, rate, portfolio)
+        }
+    };
 
     let mut results = Vec::with_capacity(horizon);
     for t in 0..horizon {
@@ -249,8 +277,8 @@ fn run_yearly(
             .get(&year)
             .ok_or_else(|| format!("Model projection does not cover year {}", year))?;
         let price = point.price_usd;
-        let infl = params.inflation_mult(t as f64);
-        let floor = params.floor_usd(t as f64);
+        let infl = params.inflation_mult(years_offset + t as f64);
+        let floor = params.floor_usd(years_offset + t as f64);
 
         let review_due = t > 0
             && match policy.review {
@@ -353,23 +381,37 @@ fn run_monthly(
     params: &SimulationParams,
     map: &BTreeMap<i32, PathPoint>,
     horizon: usize,
+    start_state: Option<&RuntimeState>,
 ) -> Result<Vec<YearResult>, String> {
-    let start = params.retirement_start_year;
+    let start = start_state
+        .map(|s| s.year)
+        .unwrap_or(params.retirement_start_year);
+    let years_offset = (start - params.retirement_start_year) as f64;
     let first = map
         .get(&start)
         .ok_or_else(|| format!("Model projection does not include retirement year {}", start))?;
-    let initial_portfolio = params.holdings_btc * first.price_usd;
-    let rate = initial_rate(policy, initial_portfolio);
 
-    let mut state = RuntimeState::new(start, params.holdings_btc);
-    state.initial_rate = rate;
-    state.base_spend_usd = initial_base_spend(policy, rate, initial_portfolio);
-    state.deferred_buffer =
-        policy.buffer.enabled && policy.valuation.onboarding == Onboarding::DeferredToEuphoria;
+    let (mut state, rate, initial_portfolio) = match start_state {
+        Some(s) => {
+            let portfolio = s.btc * first.price_usd;
+            (s.clone(), s.initial_rate, portfolio)
+        }
+        None => {
+            let portfolio = params.holdings_btc * first.price_usd;
+            let rate = initial_rate(policy, portfolio);
+            let mut state = RuntimeState::new(start, params.holdings_btc);
+            state.initial_rate = rate;
+            state.base_spend_usd = initial_base_spend(policy, rate, portfolio);
+            state.deferred_buffer = policy.buffer.enabled
+                && policy.valuation.onboarding == Onboarding::DeferredToEuphoria;
+            (state, rate, portfolio)
+        }
+    };
 
     // Immediate onboarding: pre-sell at t0 to fill the buffer to its lower
-    // target. Deferred onboarding skips this entirely.
-    if policy.buffer.enabled && !state.deferred_buffer {
+    // target. Deferred onboarding skips this entirely. A resumed state skips
+    // it too — the state is already mid-flight.
+    if start_state.is_none() && policy.buffer.enabled && !state.deferred_buffer {
         let target = policy.valuation.buffer_target_low_years * state.base_spend_usd;
         let (sold, value) = sell_btc(state.btc, target, first.price_usd);
         state.btc = (state.btc - sold).max(0.0);
@@ -388,8 +430,8 @@ fn run_monthly(
         let (price, median, sigma) = interpolate_log(map, year, month_in_year);
         // Inflation compounds yearly: the annual spend is constant within a
         // year and steps up between years.
-        let infl = params.inflation_mult(t_years);
-        let floor = params.floor_usd(t_years);
+        let infl = params.inflation_mult(years_offset + t_years);
+        let floor = params.floor_usd(years_offset + t_years);
 
         let review_due = match policy.review {
             Review::Once => m == 0,
@@ -519,6 +561,7 @@ fn run_monthly(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wasm_bindgen_test::*;
     use crate::strategies::policy::Payout;
 
     pub(crate) const START: i32 = 2030;
@@ -572,7 +615,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn percent_of_initial_set_once() {
         let policy = WithdrawalPolicy::classic_fire();
         let params = sim_params(1.0, 0.0, 0.0);
@@ -591,7 +634,7 @@ mod tests {
         assert_close(results[1].spend_usd, 4_000.0, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn percent_of_current_rederives_at_each_review() {
         let policy = WithdrawalPolicy::fixed_pct();
         let params = sim_params(1.0, 0.0, 0.0);
@@ -608,7 +651,7 @@ mod tests {
         assert_close(results[2].spend_usd, 3_686.4, 1e-3);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn fixed_usd_derives_rate_per_path() {
         let policy = WithdrawalPolicy::valuation_based();
         assert_close(initial_rate(&policy, 100_000.0), 0.5, 1e-9);
@@ -622,7 +665,7 @@ mod tests {
         assert_close(results[1].spend_usd, 51_500.0, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn amount_based_spend_rises_with_inflation() {
         let mut policy = WithdrawalPolicy::classic_fire();
         policy.anchor = Anchor::FixedUsd;
@@ -635,7 +678,7 @@ mod tests {
         assert_close(results[2].spend_usd, 25_461.6, 1e-3);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn spend_floor_rises_with_inflation() {
         let params = sim_params(1.0, 20_000.0, 3.0);
         assert_close(params.floor_usd(0.0), 20_000.0, 1e-9);
@@ -643,7 +686,7 @@ mod tests {
         assert_close(params.floor_usd(2.0), 21_218.0, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn percent_of_current_ignores_inflation() {
         let policy = WithdrawalPolicy::fixed_pct();
         let params = sim_params(1.0, 0.0, 3.0);
@@ -656,7 +699,7 @@ mod tests {
         assert_close(results[2].spend_usd, 3_686.4, 1e-3);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn ceiling_cut_triggers() {
         let policy = WithdrawalPolicy::guardrails();
         let params = sim_params(1.0, 0.0, 0.0);
@@ -671,7 +714,7 @@ mod tests {
         assert_close(results[1].spend_usd, 3_600.0, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn floor_raise_requires_prosperity() {
         let prices = [100_000.0, 80_000.0, 75_000.0, 70_000.0, 110_000.0];
         let path: Vec<PathPoint> = prices
@@ -728,7 +771,7 @@ mod tests {
         assert_close(results[4].spend_usd, 3_207.6, 1e-3);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn cut_respects_the_spend_floor() {
         let mut policy = WithdrawalPolicy::guardrails();
         policy.anchor = Anchor::FixedUsd;
@@ -745,7 +788,7 @@ mod tests {
         assert_close(results[1].spend_usd, 20_600.0, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn review_once_disables_guardrails() {
         let mut policy = WithdrawalPolicy::guardrails();
         policy.review = Review::Once;
@@ -760,7 +803,7 @@ mod tests {
         assert_close(results[2].spend_usd, 4_000.0, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn monthly_payout_on_yearly_step_matches_yearly_totals() {
         let params = sim_params(1.0, 0.0, 0.0);
         let path = flat_path(HORIZON, 100_000.0);
@@ -777,7 +820,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn depletion_reports_zeros_without_error() {
         let mut policy = WithdrawalPolicy::classic_fire();
         policy.anchor = Anchor::FixedUsd;
@@ -794,7 +837,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn missing_retirement_year_errors() {
         let policy = WithdrawalPolicy::classic_fire();
         let params = sim_params(1.0, 0.0, 0.0);
@@ -806,7 +849,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn same_inputs_produce_identical_results() {
         let policy = WithdrawalPolicy::guardrails();
         let params = sim_params(1.0, 20_000.0, 3.0);
@@ -816,7 +859,90 @@ mod tests {
         assert_eq!(a, b);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
+    fn default_start_state_matches_plain_run() {
+        let policy = WithdrawalPolicy::classic_fire();
+        let params = sim_params(1.0, 20_000.0, 3.0);
+        let path = flat_path(HORIZON, 100_000.0);
+        let plain = run_withdrawal_on_path(&policy, &params, &path).unwrap();
+        let resumed =
+            run_withdrawal_on_path_from_state(&policy, &params, &path, None).unwrap();
+        assert_eq!(plain, resumed);
+    }
+
+    #[wasm_bindgen_test]
+    fn resume_from_arbitrary_state_is_reflected() {
+        let policy = WithdrawalPolicy::classic_fire();
+        let params = sim_params(1.0, 0.0, 0.0);
+        let path = flat_path(HORIZON, 100_000.0);
+        let state = RuntimeState {
+            year: START,
+            btc: 0.5,
+            cash_usd: 0.0,
+            buffer_years: 0.0,
+            initial_rate: 0.04,
+            base_spend_usd: 4_000.0,
+            deferred_buffer: false,
+        };
+        let results =
+            run_withdrawal_on_path_from_state(&policy, &params, &path, Some(&state)).unwrap();
+        // 4% of initial spend (4,000) from a 0.5 BTC start at 100k.
+        assert_close(results[0].btc, 0.5 - 0.04, 1e-9);
+        assert_close(results[0].spend_usd, 4_000.0, 1e-6);
+        assert_eq!(results.len(), HORIZON);
+    }
+
+    #[wasm_bindgen_test]
+    fn resume_from_arbitrary_state_is_deterministic() {
+        let policy = WithdrawalPolicy::guardrails();
+        let params = sim_params(1.0, 20_000.0, 3.0);
+        let path = dist_path(HORIZON + 5, 100_000.0, 100_000.0, 50_000.0, 200_000.0);
+        let state = RuntimeState {
+            year: START + 3,
+            btc: 0.7,
+            cash_usd: 0.0,
+            buffer_years: 0.0,
+            initial_rate: 0.04,
+            base_spend_usd: 4_000.0,
+            deferred_buffer: false,
+        };
+        let a = run_withdrawal_on_path_from_state(&policy, &params, &path, Some(&state)).unwrap();
+        let b = run_withdrawal_on_path_from_state(&policy, &params, &path, Some(&state)).unwrap();
+        assert_eq!(a, b);
+        assert_eq!(a[0].year, START + 3);
+        assert_eq!(a.len(), HORIZON);
+    }
+
+    #[wasm_bindgen_test]
+    fn resume_from_arbitrary_state_preserves_cash_and_skips_onboarding() {
+        let policy = WithdrawalPolicy::valuation_based();
+        let params = sim_params(10.0, 0.0, 0.0);
+        let median = 100_000.0_f64;
+        // Bear path: the buffer stays frozen, so the cash position must not
+        // change, and the pre-sell onboarding must not run again.
+        let path = dist_path(
+            HORIZON,
+            median / 1.0_f64.exp(),
+            median,
+            median / 1.0_f64.exp(),
+            median * 1.0_f64.exp(),
+        );
+        let state = RuntimeState {
+            year: START,
+            btc: 10.0,
+            cash_usd: 20_000.0,
+            buffer_years: 0.4,
+            initial_rate: 0.05,
+            base_spend_usd: 50_000.0,
+            deferred_buffer: true,
+        };
+        let results =
+            run_withdrawal_on_path_from_state(&policy, &params, &path, Some(&state)).unwrap();
+        assert_eq!(results[0].cash_usd, 20_000.0);
+        assert_eq!(results[0].phase, Some(Phase::Bear));
+    }
+
+    #[wasm_bindgen_test]
     fn phase_determination_by_power_law_quantile() {
         let policy = WithdrawalPolicy::valuation_based();
         let median = 100_000.0_f64;
@@ -842,12 +968,11 @@ mod tests {
         assert_eq!(classify_phase(q, &policy), Phase::Fair);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn bear_phase_freezes_the_buffer() {
         let policy = WithdrawalPolicy::valuation_based();
         let params = sim_params(10.0, 0.0, 0.0);
         let median = 100_000.0_f64;
-        let sigma = 1.0_f64;
         let path = dist_path(
             HORIZON,
             median * (-1.0_f64).exp(),
@@ -866,13 +991,12 @@ mod tests {
         assert_close(results[0].spend_usd, expected_year_spend, 1.0);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn euphoria_recharges_to_upper_target() {
         let mut policy = WithdrawalPolicy::valuation_based();
         policy.valuation.onboarding = Onboarding::Immediate;
         let params = sim_params(10.0, 0.0, 0.0);
         let median = 100_000.0_f64;
-        let sigma = 1.0_f64;
         let path = dist_path(
             HORIZON,
             median * 2.0_f64.exp(),
@@ -894,12 +1018,11 @@ mod tests {
         );
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn safety_valve_recharges_one_year() {
         let policy = WithdrawalPolicy::valuation_based();
         let params = sim_params(10.0, 0.0, 0.0);
         let median = 100_000.0_f64;
-        let sigma = 1.0_f64;
         // Fair phase (z = 1 → 84th percentile): no organic refill (0%), but
         // the quantile is above the median safety threshold → the valve
         // recharges exactly one year.
@@ -917,12 +1040,11 @@ mod tests {
         assert_close(last.cash_usd, 50_000.0, 500.0);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn deferred_onboarding_sells_only_drip_in_bear() {
         let policy = WithdrawalPolicy::valuation_based();
         let params = sim_params(10.0, 0.0, 0.0);
         let median = 100_000.0_f64;
-        let sigma = 1.0_f64;
         let price = median * (-1.0_f64).exp();
         let path = dist_path(
             HORIZON,
@@ -938,7 +1060,7 @@ mod tests {
         assert_close(results[0].sold_btc, 50_000.0 / price, 1e-6);
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn monthly_prices_interpolate_geometrically() {
         let points = vec![
             PathPoint {
@@ -974,6 +1096,7 @@ mod tests {
 #[cfg(test)]
 mod band_path_tests {
     use super::*;
+    use wasm_bindgen_test::*;
     use crate::strategies::policy::WithdrawalPolicy;
 
     fn band_model_points(n: usize, path: &str) -> Vec<crate::models::ModelPoint> {
@@ -1021,7 +1144,7 @@ mod band_path_tests {
         run_withdrawal(&policy, &params, points).unwrap()
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn median_path_is_fair_throughout() {
         let points = band_model_points(tests::HORIZON, "median");
         let results = monthly_results(&points);
@@ -1030,7 +1153,7 @@ mod band_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn minus_1s_path_is_bear() {
         let points = band_model_points(tests::HORIZON, "minus_1s");
         let results = monthly_results(&points);
@@ -1039,7 +1162,7 @@ mod band_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn plus_1s_path_is_fair_at_default_thresholds() {
         let points = band_model_points(tests::HORIZON, "plus_1s");
         let results = monthly_results(&points);
@@ -1049,7 +1172,7 @@ mod band_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn plus_2s_path_is_euphoria() {
         let points = band_model_points(tests::HORIZON, "plus_2s");
         let results = monthly_results(&points);
@@ -1058,7 +1181,7 @@ mod band_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn missing_path_price_falls_back_to_median() {
         let mut points = band_model_points(tests::HORIZON, "plus_2s");
         for p in points.iter_mut() {
@@ -1070,7 +1193,7 @@ mod band_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn band_path_enumeration_is_deterministic() {
         for path in ["median", "minus_1s", "plus_1s", "plus_2s"] {
             let points = band_model_points(tests::HORIZON, path);
@@ -1084,6 +1207,7 @@ mod band_path_tests {
 #[cfg(test)]
 mod percentile_path_tests {
     use super::*;
+    use wasm_bindgen_test::*;
     use crate::strategies::policy::WithdrawalPolicy;
 
     /// Power Law custom-percentile band style: no 1σ bands, only p10/p90.
@@ -1107,7 +1231,7 @@ mod percentile_path_tests {
             .collect()
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn p90_path_is_euphoria_with_percentile_bands() {
         let points = percentile_points(tests::HORIZON, 100_000.0_f64 * 3.6);
         let policy = WithdrawalPolicy::valuation_based();
@@ -1118,7 +1242,7 @@ mod percentile_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn p10_path_is_bear_with_percentile_bands() {
         let points = percentile_points(tests::HORIZON, 100_000.0_f64 / 3.6);
         let policy = WithdrawalPolicy::valuation_based();
@@ -1129,7 +1253,7 @@ mod percentile_path_tests {
         }
     }
 
-    #[test]
+    #[wasm_bindgen_test]
     fn median_path_with_percentile_bands_is_fair() {
         let points = percentile_points(tests::HORIZON, 100_000.0_f64);
         let policy = WithdrawalPolicy::valuation_based();

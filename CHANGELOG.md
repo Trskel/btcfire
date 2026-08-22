@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-22 — Monte Carlo simulation with outcome summary (Phase 9)
+
+- Monte Carlo engine in Rust (`wasm/src/simulation/monte_carlo.rs`): 10,000 price paths per run, sampled as a log-normal random walk around the model's median with the model's own band dispersion (`ChaCha8Rng`, fixed seed 42 → reproducible runs), each path run through the withdrawal engine
+- Outcome classification: every path is exactly one of depleted / below-minimum / success (counts sum to the run count); desired-spend coverage measured across success paths only
+- Four-part summary at the beginning of the plan results: % ran out of money, % below minimum spending, % success, % of years at desired spend (successful runs only, "—" when none) with educational info buttons
+- Per-year percentile series (p10/p25/p50/p75/p90 of BTC) computed by the engine, ready for the Phase 10 fan charts
+- The withdrawal engine now resumes from an arbitrary `RuntimeState` (`run_withdrawal_on_path_from_state`) — the foundation for the Phase 15 "Today" advisor
+- New `run_monte_carlo_wasm` binding; `rand`/`rand_chacha`/`rand_distr` added to the wasm crate
+- Also fixed: the engine test suite (33 tests) was silently skipped because plain `#[test]`s don't run under `wasm-pack test --node`; converted to `#[wasm_bindgen_test]`
+- 90 Rust/WASM tests + 119 frontend tests
+
 ## 2026-08-22 — Unified withdrawal policy (Phase 7)
 
 - Implement Phase 7: unified withdrawal policy engine in Rust/WASM — presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom) over a shared knob set: anchor (% of initial / % of current / fixed USD), rate or spend, payout frequency, review cadence, guardrails (ceiling/floor thresholds, adjustment size, prosperity rule), cash buffer, and valuation knobs

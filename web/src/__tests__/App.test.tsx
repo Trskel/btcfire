@@ -95,6 +95,18 @@ vi.mock('btcfire-wasm', () => ({
         phase: null,
       },
     ]),
+  run_monte_carlo_wasm: () =>
+    Promise.resolve({
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 20.0,
+        belowMinPct: 10.0,
+        successPct: 70.0,
+        desiredSpendPct: 80.0,
+      },
+      percentiles: [],
+    }),
 }))
 
 vi.mock('@/hooks/useHistoricPrices', () => ({

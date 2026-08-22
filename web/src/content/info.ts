@@ -95,6 +95,16 @@ export const WITHDRAWAL_INFO = {
 } as const
 
 export const RESULTS_INFO = {
+  monteCarlo:
+    "10,000 randomized price futures sampled around your model's bands, each run through your withdrawal policy. The summary splits them into three outcomes and shows how often spending stayed at your desired level. These are probabilities, not predictions.",
+  runOut:
+    'The share of futures where the stack hit zero before your lifespan — you could no longer sell anything to cover spending.',
+  belowMin:
+    "The share of futures where you never ran out, but at least once had to spend below your minimum floor.",
+  success:
+    'The share of futures where you never ran out of money and never had to spend below your minimum.',
+  desiredSpend:
+    'Across the successful futures only: the share of retirement years where spending reached your desired level (adjusted for inflation).',
   pricePaths:
     "Each tile follows your retirement at a different percentile of the model's price range — P10 is pessimistic, P90 optimistic. 'Depleted' means the stack ran out before your lifespan. The suffix shows the phase of the final year.",
   phase:
