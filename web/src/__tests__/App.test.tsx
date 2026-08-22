@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import App from '../App'
 
 vi.mock('btcfire-wasm', () => ({
@@ -223,6 +224,32 @@ describe('App', () => {
     expect(screen.getAllByText('Bitcoin24').length).toBeGreaterThanOrEqual(1)
   })
 
+  it('shows info buttons on model rows and expanded model controls', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    openTab('Price model')
+
+    expect(
+      screen.getByRole('button', { name: 'About Power Law' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Stock-to-Flow (S2F)' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Bitcoin24 (CAGR)' }),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('button', { name: 'About Formulation' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Confidence Band' }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'About Power Law' }))
+    expect(screen.getByText(/Fits a straight line/)).toBeInTheDocument()
+  })
+
   it('unmounts the previous tab content when switching', () => {
     render(<App />)
     expect(screen.getByText('Initial BTC holdings')).toBeInTheDocument()
@@ -237,10 +264,10 @@ describe('App', () => {
   it('renders the Withdrawal tab with preset cards', () => {
     render(<App />)
     openTab('Withdrawal')
-    expect(screen.getByRole('button', { name: /Classic FIRE/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Fixed %/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Guardrails/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Valuation-based/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Classic FIRE/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Fixed %/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Guardrails/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Valuation-based/ })).toBeInTheDocument()
   })
 
   it('renders the plan results card', () => {

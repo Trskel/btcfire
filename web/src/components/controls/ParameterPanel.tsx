@@ -1,5 +1,6 @@
 import type { SimulationParams } from '@/types/simulation'
 import { PARAM_BOUNDS } from '@/types/simulation'
+import { PARAM_INFO } from '@/content/info'
 import { ParameterInput } from './ParameterInput'
 
 interface ParameterPanelProps {
@@ -13,6 +14,7 @@ interface FieldDef {
   label: string
   format: (value: number) => string
   displayFormat: (value: number) => string
+  info: string
 }
 
 function formatBtc(value: number): string {
@@ -25,42 +27,49 @@ const FIELDS: FieldDef[] = [
     label: 'Initial BTC holdings',
     format: formatBtc,
     displayFormat: (v) => `${formatBtc(v)} BTC`,
+    info: PARAM_INFO.holdingsBtc,
   },
   {
     key: 'retirementStartYear',
     label: 'Retirement start year',
     format: (v) => String(Math.round(v)),
     displayFormat: (v) => String(Math.round(v)),
+    info: PARAM_INFO.retirementStartYear,
   },
   {
     key: 'currentAge',
     label: 'Current age',
     format: (v) => String(Math.round(v)),
     displayFormat: (v) => `${Math.round(v)} yrs`,
+    info: PARAM_INFO.currentAge,
   },
   {
     key: 'lifespan',
     label: 'Expected lifespan',
     format: (v) => String(Math.round(v)),
     displayFormat: (v) => `${Math.round(v)} yrs`,
+    info: PARAM_INFO.lifespan,
   },
   {
     key: 'minimumSpendUsd',
     label: 'Minimum annual spending',
     format: (v) => String(Math.round(v)),
     displayFormat: (v) => `$${Math.round(v).toLocaleString('en-US')}`,
+    info: PARAM_INFO.minimumSpendUsd,
   },
   {
     key: 'annualSpendUsd',
     label: 'Desired annual spending',
     format: (v) => String(Math.round(v)),
     displayFormat: (v) => `$${Math.round(v).toLocaleString('en-US')}`,
+    info: PARAM_INFO.annualSpendUsd,
   },
   {
     key: 'inflationRate',
     label: 'Annual inflation rate',
     format: (v) => String(Math.round(v * 10) / 10),
     displayFormat: (v) => `${(Math.round(v * 10) / 10).toFixed(1)}%`,
+    info: PARAM_INFO.inflationRate,
   },
 ]
 
@@ -72,7 +81,7 @@ export function ParameterPanel({
   const fields = FIELDS.filter((f) => f.key !== 'inflationRate' || showInflation)
   return (
     <div className="space-y-4">
-      {fields.map(({ key, label, format, displayFormat }) => (
+      {fields.map(({ key, label, format, displayFormat, info }) => (
         <ParameterInput
           key={key}
           label={label}
@@ -82,6 +91,7 @@ export function ParameterPanel({
           max={PARAM_BOUNDS[key].max}
           formatValue={format}
           onChange={(value) => onParamChange(key, value)}
+          info={info}
         />
       ))}
     </div>

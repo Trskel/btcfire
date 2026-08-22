@@ -1,6 +1,8 @@
 import type { Phase, YearResult } from '@/types/policy'
 import type { BandPathRun, PathId, WithdrawalRun } from '@/lib/withdrawal'
 import { cn } from '@/lib/utils'
+import { InfoButton } from '@/components/ui/info-button'
+import { RESULTS_INFO } from '@/content/info'
 
 interface WithdrawalResultsProps {
   run: WithdrawalRun | null
@@ -106,7 +108,15 @@ function YearlyTable({ results }: { results: YearResult[] }) {
             <th className="py-2 pr-4 font-medium">BTC sold</th>
             <th className="py-2 pr-4 font-medium">BTC left</th>
             <th className="py-2 pr-4 font-medium">Cash buffer</th>
-            <th className="py-2 font-medium">Phase</th>
+            <th className="py-2 font-medium">
+              <span className="flex items-center gap-1">
+                Phase
+                <InfoButton
+                  label="Phase"
+                  description={RESULTS_INFO.phase}
+                />
+              </span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -168,24 +178,36 @@ export function WithdrawalResults({
         </p>
       )}
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" role="group" aria-label="Price paths">
-        {summaries.map((s) => {
-          const active = s.path.pathId === selected.path.pathId
-          return (
-            <button
-              key={s.path.pathId}
-              type="button"
-              aria-pressed={active}
-              className={cn(
-                'flex min-h-[44px] flex-col items-start justify-center rounded-lg border px-2 py-1.5 text-left transition-colors',
-                active
-                  ? 'border-primary bg-primary/10'
-                  : 'border-border bg-background hover:bg-muted',
-              )}
-              onClick={() => onSelectPath(s.path.pathId)}
-            >
-              <span className="text-xs font-medium">{s.path.name}</span>
-              <span className="text-xs text-muted-foreground/70">{s.path.label}</span>
+      <div className="space-y-1.5">
+        <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          Price paths
+          <InfoButton
+            label="Price paths"
+            description={RESULTS_INFO.pricePaths}
+          />
+        </p>
+        <div
+          className="grid grid-cols-3 gap-2 sm:grid-cols-5"
+          role="group"
+          aria-label="Price paths"
+        >
+          {summaries.map((s) => {
+            const active = s.path.pathId === selected.path.pathId
+            return (
+              <button
+                key={s.path.pathId}
+                type="button"
+                aria-pressed={active}
+                className={cn(
+                  'flex min-h-[44px] flex-col items-start justify-center rounded-lg border px-2 py-1.5 text-left transition-colors',
+                  active
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-background hover:bg-muted',
+                )}
+                onClick={() => onSelectPath(s.path.pathId)}
+              >
+                <span className="text-xs font-medium">{s.path.name}</span>
+                <span className="text-xs text-muted-foreground/70">{s.path.label}</span>
               <span
                 className={cn(
                   'text-xs tabular-nums',
@@ -196,9 +218,17 @@ export function WithdrawalResults({
               >
                 {summaryLine(s)}
               </span>
-            </button>
-          )
-        })}
+              {s.depletionYear === null &&
+                s.path.finalPriceUsd !== null &&
+                s.finalBtc > 0 && (
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    ≈ {formatUsd(s.finalBtc * s.path.finalPriceUsd)}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <YearlyCards results={selected.path.results} />

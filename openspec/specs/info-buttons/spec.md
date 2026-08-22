@@ -4,7 +4,7 @@
 
 In-place educational explanations for existing UI elements. A reusable info button (ⓘ) attached to the labels of simulation parameters, price-model controls, withdrawal-policy knobs, and result metrics, revealing plain-language explanations that state assumptions and uncertainty without prescribing financial advice.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Reusable info button component
 The system SHALL provide a reusable info button component that renders a small icon button adjacent to a UI element's label and reveals an explanation panel when activated. The button SHALL have a minimum 44px touch target, a programmatically accessible name identifying the associated element, and a visible info icon.
@@ -23,7 +23,7 @@ The system SHALL provide a reusable info button component that renders a small i
 
 #### Scenario: Dismissal
 - **WHEN** the explanation panel is open and the user taps the button again, taps outside the panel, or presses Escape
-- **THEN** the panel closes and focus returns to the info button
+- **THEN** the panel closes, and when closed via Escape or the button, focus returns to the info button
 
 ### Requirement: Coverage of existing elements
 The system SHALL attach info buttons with non-empty explanation text to every labeled element in the parameter panel, each price model's controls, the model selector entries, the withdrawal policy tab, and the withdrawal results summary.

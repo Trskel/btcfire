@@ -2,12 +2,14 @@ import { cn } from '@/lib/utils'
 import type { ModelId } from '@/types/models'
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { InfoButton } from '@/components/ui/info-button'
 
 export interface ModelEntry {
   id: ModelId
   label: string
   shortLabel: string
   controls: ReactNode
+  info?: string
 }
 
 interface ModelSelectorProps {
@@ -52,6 +54,9 @@ export function ModelSelector({
                   <span className="hidden sm:inline">{model.label}</span>
                 </span>
               </label>
+              {model.info && (
+                <InfoButton label={model.label} description={model.info} />
+              )}
               <button
                 className={cn(
                   'flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-transform',

@@ -20,6 +20,7 @@ export interface BandPathRun {
   name: string
   label: string
   results: YearResult[]
+  finalPriceUsd: number | null
 }
 
 export interface WithdrawalRun {
@@ -141,11 +142,16 @@ export async function runWithdrawal(
       effective,
       points,
     )) as YearResult[]
+    const last = results[results.length - 1] ?? null
+    const finalPriceUsd = last
+      ? (points.find((p) => p.year === last.year)?.path_price_usd ?? null)
+      : null
     paths.push({
       pathId: source.pathId,
       name: PATH_NAMES[source.pathId],
       label: PATH_LABELS[source.pathId],
       results,
+      finalPriceUsd,
     })
   }
 

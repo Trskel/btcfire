@@ -40,8 +40,9 @@ New component in `web/src/components/ui/info-button.tsx`:
 
 It renders a ghost icon button (`Info` icon from lucide-react, `size="icon-sm"`-like visual but padded to a 44px hit area) and wraps `label` in a visually consistent inline label row (`text-xs font-medium text-muted-foreground`). For call sites that already render their own label (e.g., `ParameterInput`, `WithdrawalTab`'s `SectionLabel`), those components gain an optional `info?: string` prop that renders `InfoButton` inline next to the existing label, so no markup duplication. Label row alignment: `flex items-center gap-1.5` with the button `-my-1`-style padding to hit 44px without inflating line height or shifting layout.
 
-### 4. Copy lives with the components, keyed by element
-Each covered component defines a local constant map (e.g., `const INFO: Record<string, string>`) or passes descriptions as literal props at the call site. Centralizing all copy in one file would split it from the UI it describes and make drift easier; colocating keeps label + explanation together. Copy rules: ≤4 sentences, plain language, disclose assumptions and uncertainty, no advice.
+### 4. Copy centralized in one content module
+All explanation text lives in `web/src/content/info.ts` as grouped, typed constants (`PARAM_INFO`, `MODEL_INFO`, `POWER_LAW_INFO`, `FIT_INFO`, `WITHDRAWAL_INFO`, `RESULTS_INFO`). Components keep their labels but reference descriptions by key. This makes bulk edits (tone passes, content-standards reviews, future i18n) single-file jobs; typing (`Record<keyof SimulationParams, string>`, `Record<ModelId, string>`) prevents orphaned or missing keys. Copy rules: ≤4 sentences, plain language, disclose assumptions and uncertainty, no advice.
+- **Alternative considered**: colocating copy inside each component — keeps text next to its UI but splits bulk edits across many files. Rejected in review: the copy is static educational text with no per-component interpolation, so centralization loses nothing.
 
 ### 5. Coverage wiring
 - `ParameterInput` + `ParameterPanel`: add `info` to `FieldDef` entries.
@@ -54,7 +55,7 @@ Each covered component defines a local constant map (e.g., `const INFO: Record<s
 
 - [44px targets inflate row height on dense mobile layout] → Mitigation: small visual button (icon only) with padded hit area; verify no layout shift at 375px via test + manual QA.
 - [Popover clipping inside scroll containers or overflowing viewport on tiny screens] → Mitigation: Base UI popover positioner with collision detection; on <640px prefer `center` placement; portal to body.
-- [Copy drift: text added but stale/never updated] → Mitigation: tests assert every covered label has a non-empty description (coverage requirement), and copy stays next to the UI it describes.
+- [Copy drift: text added but stale/never updated] → Mitigation: tests assert every covered label has a non-empty description (coverage requirement), and the central typed module (`web/src/content/info.ts`) makes stale or missing entries visible at compile time.
 - [Existing tests break due to extra buttons in labels] → Mitigation: use role/accessible-name queries in new tests; update existing queries minimally.
 - [Popover opens unexpectedly while typing in inputs] → Mitigation: only trigger button opens; no auto-open on focus.
 

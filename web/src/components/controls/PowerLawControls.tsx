@@ -6,6 +6,8 @@ import type { PricePoint } from '@/types/price'
 import type { SimulationParams } from '@/types/simulation'
 import { run_power_law_wasm } from 'btcfire-wasm'
 import { ensureWasm } from '@/lib/wasm'
+import { InfoButton } from '@/components/ui/info-button'
+import { POWER_LAW_INFO, FIT_INFO } from '@/content/info'
 
 function parseFiniteFloat(val: string, fallback: number): number {
   const n = parseFloat(val)
@@ -101,9 +103,12 @@ export function PowerLawControls({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="flex-1 min-w-0">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Formulation
-          </label>
+          <InfoButton
+            showLabel
+            className="mb-1"
+            label="Formulation"
+            description={POWER_LAW_INFO.formulation}
+          />
           <select
             className="min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             value={formulation}
@@ -118,9 +123,12 @@ export function PowerLawControls({
         {formulation === 'custom' && (
           <>
             <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                a
-              </label>
+              <InfoButton
+                showLabel
+                className="mb-1"
+                label="a"
+                description={POWER_LAW_INFO.customA}
+              />
               <input
                 type="number"
                 step="0.01"
@@ -130,9 +138,12 @@ export function PowerLawControls({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                b
-              </label>
+              <InfoButton
+                showLabel
+                className="mb-1"
+                label="b"
+                description={POWER_LAW_INFO.customB}
+              />
               <input
                 type="number"
                 step="0.01"
@@ -145,9 +156,12 @@ export function PowerLawControls({
         )}
 
         <div className="flex-1 min-w-0">
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Confidence Band
-          </label>
+          <InfoButton
+            showLabel
+            className="mb-1"
+            label="Confidence Band"
+            description={POWER_LAW_INFO.confidenceBand}
+          />
           <select
             className="min-h-[44px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             value={bandStyle}
@@ -162,9 +176,12 @@ export function PowerLawControls({
         {bandStyle === 'custom_percentiles' && (
           <>
             <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                P{parseInt(customP10) || 10} / P{parseInt(customP90) || 90}
-              </label>
+              <InfoButton
+                showLabel
+                className="mb-1"
+                label={`P${parseInt(customP10) || 10} / P${parseInt(customP90) || 90}`}
+                description={POWER_LAW_INFO.outerPercentiles}
+              />
               <div className="flex gap-1">
                 <input
                   type="number"
@@ -188,9 +205,12 @@ export function PowerLawControls({
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                P{parseInt(customP25) || 25} / P{parseInt(customP75) || 75}
-              </label>
+              <InfoButton
+                showLabel
+                className="mb-1"
+                label={`P${parseInt(customP25) || 25} / P${parseInt(customP75) || 75}`}
+                description={POWER_LAW_INFO.innerPercentiles}
+              />
               <div className="flex gap-1">
                 <input
                   type="number"
@@ -222,7 +242,7 @@ export function PowerLawControls({
       )}
 
       {result && (
-        <div className="space-y-1">
+        <div className="flex items-center gap-1">
           <p className="text-xs text-muted-foreground">
             R² = {result.rSquared.toFixed(4)} | a = {result.a.toFixed(2)}
             {formulation === 'power_fit'
@@ -230,9 +250,10 @@ export function PowerLawControls({
               : <> | b = {result.b.toFixed(2)}</>
             }
           </p>
-          <p className="text-xs text-muted-foreground/60">
-            R² measures fit to past data only — it does not predict future accuracy.
-          </p>
+          <InfoButton
+            label="R² fit statistic"
+            description={FIT_INFO.rSquared}
+          />
         </div>
       )}
     </div>
