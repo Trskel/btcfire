@@ -32,7 +32,7 @@ Fully static. Deployable to Vercel, GitHub Pages, or any CDN.
 | **React**   | UI framework        | TypeScript-first, large ecosystem                         |
 | **shadcn/ui** | Component library | Accessible, Tailwind-based, copied into codebase (no dep) |
 | **Tailwind CSS** | Styling         | Utility-first, pairs with shadcn/ui, mobile-first breakpoints built in |
-| **Recharts** | Charts             | React-native charting, composable, responsive containers for financial data |
+| **ECharts** | Charts             | Canvas-based, log axis, slider zoom + pan, used via `echarts-for-react` |
 
 ## Simulation engine (Rust/WASM)
 
@@ -54,8 +54,9 @@ Fully static. Deployable to Vercel, GitHub Pages, or any CDN.
 
 ## Historic price data
 
-- Fetched from a free public API (e.g., CoinGecko, Blockchain.com) on first load.
-- Cached in `localStorage` with a TTL (refresh daily).
+- Fetched from Binance's public klines API (BTCUSDT, 1d interval), batched in 1000-candle requests from genesis to present, proxied via the Vite dev server (`/api/binance/`).
+- CoinGecko was the original source but its free tier became rate-capped; the app moved to Binance (data starts 2017-08-17).
+- Cached in `localStorage` with a 24h TTL; stale cache is served while a fresh fetch happens, plus a manual refresh control.
 - Used as input for model calibration and chart display.
 
 ## Project structure
@@ -71,15 +72,16 @@ btcfire/
 │       │   ├── mod.rs
 │       │   ├── power_law.rs
 │       │   ├── s2f.rs
-│       │   └── bitcoin24.rs
-│       ├── strategies/   # Withdrawal strategies
+│       │   ├── bitcoin24.rs
+│       │   └── stats.rs   # shared regression/stat helpers
+│       ├── strategies/   # Withdrawal strategies (Phase 7+ — empty for now)
 │       │   ├── mod.rs
-│       │   ├── classic.rs
-│       │   ├── guardrails.rs
-│       │   └── bbd.rs
-│       └── simulation/   # Monte Carlo engine
+│       │   ├── classic.rs        (planned)
+│       │   ├── guardrails.rs     (planned)
+│       │   └── bbd.rs            (planned)
+│       └── simulation/   # Monte Carlo engine (Phase 9 — empty for now)
 │           ├── mod.rs
-│           └── engine.rs
+│           └── engine.rs         (planned)
 ├── web/                  # React application
 │   ├── package.json
 │   ├── vite.config.ts
@@ -128,7 +130,7 @@ Mobile-first approach using Tailwind's breakpoint system:
 
 Principles:
 - All styles start mobile, then add complexity at larger breakpoints.
-- Charts use `ResponsiveContainer` and simplify tick labels / legends on small screens.
+- Charts resize to their containers and simplify tick labels / legends on small screens.
 - Tables switch to card/list layouts on mobile.
 - Controls stack vertically on mobile, use multi-column grid on desktop.
 - Touch targets are minimum 44×44px.
