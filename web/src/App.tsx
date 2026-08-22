@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { ParameterPanel } from '@/components/controls/ParameterPanel'
 import { WithdrawalTab } from '@/components/controls/WithdrawalTab'
 import { WithdrawalResults } from '@/components/controls/WithdrawalResults'
+import { Spinner } from '@/components/ui/spinner'
 import { useHistoricPrices } from '@/hooks/useHistoricPrices'
 import { useSimulationParams } from '@/hooks/useSimulationParams'
 import { useWithdrawalPolicy } from '@/hooks/useWithdrawalPolicy'
@@ -21,12 +22,16 @@ import { runWithdrawal, errorMessage } from '@/lib/withdrawal'
 import type { PathId } from '@/lib/withdrawal'
 import type { WithdrawalRun } from '@/lib/withdrawal'
 import type { ModelOverlay, ModelId } from '@/types/models'
+import type { WithdrawalPolicy } from '@/types/policy'
+import type { SimulationParams } from '@/types/simulation'
 import { MODEL_LABELS } from '@/types/models'
 import { MODEL_INFO } from '@/content/info'
 
 type ControlTab = 'scenario' | 'price-model' | 'withdrawal'
 
 const MODEL_ORDER: ModelId[] = ['power-law', 's2f', 'bitcoin24']
+
+const PAINT_YIELD_MS = 50
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
@@ -46,10 +51,14 @@ function App() {
   const [projectionYears, setProjectionYears] = useState(30)
   const [withdrawalResult, setWithdrawalResult] = useState<{
     overlay: ModelOverlay
+    policy: WithdrawalPolicy
+    simParams: SimulationParams
     run: WithdrawalRun
   } | null>(null)
   const [withdrawalFailure, setWithdrawalFailure] = useState<{
     overlay: ModelOverlay
+    policy: WithdrawalPolicy
+    simParams: SimulationParams
     message: string
   } | null>(null)
 
@@ -102,37 +111,44 @@ function App() {
   useEffect(() => {
     if (!engineOverlay) return
     let cancelled = false
-    runWithdrawal(policy, simParams, engineOverlay)
-      .then((run) => {
-        if (cancelled) return
-        setWithdrawalResult({ overlay: engineOverlay, run })
-        setWithdrawalFailure(null)
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setWithdrawalResult(null)
-        setWithdrawalFailure({
-          overlay: engineOverlay,
-          message: errorMessage(err),
+    const timeoutId = window.setTimeout(() => {
+      runWithdrawal(policy, simParams, engineOverlay)
+        .then((run) => {
+          if (cancelled) return
+          setWithdrawalResult({ overlay: engineOverlay, policy, simParams, run })
+          setWithdrawalFailure(null)
         })
-      })
+        .catch((err: unknown) => {
+          if (cancelled) return
+          setWithdrawalResult(null)
+          setWithdrawalFailure({
+            overlay: engineOverlay,
+            policy,
+            simParams,
+            message: errorMessage(err),
+          })
+        })
+    }, PAINT_YIELD_MS)
     return () => {
       cancelled = true
+      window.clearTimeout(timeoutId)
     }
   }, [engineOverlay, policy, simParams])
+  const resultMatches =
+    withdrawalResult !== null &&
+    withdrawalResult.overlay === engineOverlay &&
+    withdrawalResult.policy === policy &&
+    withdrawalResult.simParams === simParams
+  const failureMatches =
+    withdrawalFailure !== null &&
+    withdrawalFailure.overlay === engineOverlay &&
+    withdrawalFailure.policy === policy &&
+    withdrawalFailure.simParams === simParams
 
-  const planRun =
-    engineOverlay && withdrawalResult?.overlay === engineOverlay
-      ? withdrawalResult.run
-      : null
-  const planError =
-    engineOverlay && withdrawalFailure?.overlay === engineOverlay
-      ? withdrawalFailure.message
-      : null
+  const planRun = resultMatches ? withdrawalResult.run : null
+  const planError = failureMatches ? withdrawalFailure.message : null
   const planLoading =
-    engineOverlay !== null &&
-    withdrawalResult?.overlay !== engineOverlay &&
-    withdrawalFailure?.overlay !== engineOverlay
+    engineOverlay !== null && !resultMatches && !failureMatches
 
   const modelEntries: ModelEntry[] = useMemo(() => {
     if (!data) return []
@@ -224,7 +240,7 @@ function App() {
           <CardContent>
             {isLoading && (
               <div className="flex h-[400px] items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-foreground" />
+                <Spinner />
               </div>
             )}
             {error && (
@@ -368,6 +384,18 @@ function App() {
           </CardContent>
         </Card>
       </main>
+
+      {planLoading && (
+        <div
+          role="status"
+          aria-label="Running simulation"
+          className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+        >
+          <div className="rounded-full bg-background/80 p-4 shadow-lg ring-1 ring-foreground/10 backdrop-blur-sm">
+            <Spinner />
+          </div>
+        </div>
+      )}
 
       <footer className="mt-8 border-t border-border pt-4">
         <p className="text-xs text-muted-foreground leading-relaxed">

@@ -211,6 +211,19 @@ describe('WithdrawalResults', () => {
     expect(screen.getByText(/No results yet/)).toBeInTheDocument()
   })
 
+  it('shows a loading message while calculating', () => {
+    render(
+      <WithdrawalResults
+        run={null}
+        selectedPathId="median"
+        onSelectPath={vi.fn()}
+        error={null}
+        loading={true}
+      />,
+    )
+    expect(screen.getByText('Running simulation…')).toBeInTheDocument()
+  })
+
   it('shows the error state', () => {
     render(
       <WithdrawalResults
