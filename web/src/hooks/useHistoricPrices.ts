@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { PricePoint } from '@/types/price'
-import { fetchBtcPriceHistory } from '@/lib/api/coingecko'
+import { fetchBtcPriceTail } from '@/lib/api/binance'
+import {
+  staticPricePoints,
+  staticGeneratedAt,
+} from '@/lib/data/staticHistory'
+import { mergePriceHistory } from '@/lib/data/mergeHistory'
 import {
   getCachedPrices,
   getStaleCachedPrices,
@@ -27,7 +32,7 @@ export function useHistoricPrices(): UseHistoricPricesResult {
     setIsStale(false)
 
     if (!force) {
-      const cached = getCachedPrices()
+      const cached = getCachedPrices(staticGeneratedAt)
       if (cached) {
         setData(cached)
         setIsLoading(false)
@@ -36,13 +41,17 @@ export function useHistoricPrices(): UseHistoricPricesResult {
     }
 
     try {
-      const prices = await fetchBtcPriceHistory()
-      setCachedPrices(prices)
-      setData(prices)
+      const live = await fetchBtcPriceTail()
+      const merged = mergePriceHistory(staticPricePoints, live)
+      setCachedPrices(merged, staticGeneratedAt)
+      setData(merged)
     } catch (err) {
       const stale = getStaleCachedPrices()
       if (stale) {
         setData(stale)
+        setIsStale(true)
+      } else if (staticPricePoints.length > 0) {
+        setData(staticPricePoints)
         setIsStale(true)
       } else {
         setError(err instanceof Error ? err.message : 'Failed to load price data')

@@ -1,6 +1,7 @@
+import { staticEndMs } from '@/lib/data/staticHistory'
 import type { PricePoint } from '@/types/price'
 
-const BINANCE_API = '/api/binance/api/v3/klines'
+const BINANCE_API = 'https://api.binance.com/api/v3/klines'
 const BATCH_SIZE = 1000
 
 interface BinanceKline {
@@ -26,13 +27,14 @@ async function fetchBatch(symbol: string, interval: string, startTime: number, l
   return data as BinanceKline[]
 }
 
-export async function fetchBtcPriceHistory(): Promise<PricePoint[]> {
+export async function fetchBtcPriceTail(): Promise<PricePoint[]> {
   const symbol = 'BTCUSDT'
   const interval = '1d'
 
-  // Fetch all data in batches from genesis-era to now
+  // Only the tail after the bundled static history; the pagination loop is
+  // a safety net for snapshots that are more than ~3 years stale.
   const allCandles: BinanceKline[] = []
-  let startTime = 1_230_940_800_000 // Bitcoin genesis block timestamp (Jan 3 2009)
+  let startTime = staticEndMs + 1
 
   while (true) {
     const batch = await fetchBatch(symbol, interval, startTime, BATCH_SIZE)
