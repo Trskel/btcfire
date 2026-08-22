@@ -1,6 +1,6 @@
 # BTCFire — Bitcoin Retirement Simulator
 
-**Your Bitcoin. Your retirement. Your privacy.** BTCFire simulates retirement scenarios entirely in your browser — today via deterministic band-path simulations, with Monte Carlo coming next — so you can model whether a BTC-denominated portfolio can sustain you through retirement. No servers, no accounts, no data leaves your machine.
+**Your Bitcoin. Your retirement. Your privacy.** BTCFire simulates retirement scenarios entirely in your browser — deterministic band-path runs plus a 10,000-path Monte Carlo engine with outcome probabilities and failure forensics — so you can model whether a BTC-denominated portfolio can sustain you through retirement. No servers, no accounts, no data leaves your machine.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
@@ -17,7 +17,7 @@ Traditional retirement calculators work for fiat portfolios — stocks, bonds, 4
 
 BTCFire bridges that gap.
 
-It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), tests your holdings against **withdrawal policies** — unified presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, and later Buy-Borrow-Die) built from a shared knob set — and simulates each model's median and confidence-band paths against your plan. The output is a year-by-year plan per path — BTC left, cash buffer, and spend — with Monte Carlo outcome distributions and success probabilities coming in Phase 9.
+It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), tests your holdings against **withdrawal policies** — unified presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, and later Buy-Borrow-Die) built from a shared knob set — and simulates each model's median and confidence-band paths against your plan. The output is a year-by-year plan per path — BTC left, cash buffer, and spend — plus a Monte Carlo outcome summary (run-out risk, below-minimum risk, success probability, time at desired spend) with failure forensics.
 
 Two faces, one core: **Plan** lets you define a policy and simulate thousands of futures; **Today** (once you're retired) evaluates that same policy against your real, present state — what does my plan prescribe this month, and what would deviating cost?
 
@@ -31,8 +31,8 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 2. **Fit a price model** — Power Law regression, Stock-to-Flow, or configurable custom parameters, extended decades into the future with statistical confidence bands.
 3. **Define your stack** — BTC holdings, spending (floor + desired), inflation rate, retirement timeline, and the projection horizon.
 4. **Choose a withdrawal policy** — a preset (Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom) over a shared knob set: anchor, rate, inflation, payout/review cadence, guardrails, cash buffer, valuation.
-5. **Run the simulation** — the Rust/WASM engine steps your policy year by year (or month by month) along the selected model's median and band paths, instantly in your browser.
-6. **Explore results** — year-by-year BTC, cash buffer, and spend per path, with per-path outcomes (final BTC, depletion year, phase); fan charts and success rates arrive with Monte Carlo (Phase 9).
+5. **Run the simulation** — the Rust/WASM engine steps your policy year by year (or month by month) along the selected model's median and band paths, plus a 10,000-path Monte Carlo run seeded for reproducibility, instantly in your browser.
+6. **Explore results** — Monte Carlo summary tiles (% ran out of money, % below minimum, % success, % of years at desired spend) and failure forensics (survival curve, failure-year histogram, shortfall stats), then year-by-year BTC, cash buffer, and spend per path with per-path outcomes (final BTC, depletion year, phase); fan charts arrive in Phase 10.
 
 ## ✨ Features (so far)
 
@@ -61,7 +61,11 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 | ✅ | Withdrawal tab — preset cards with dirty marker and knob visibility rules (guardrails/valuation/buffer knobs hidden when off) |
 | ✅ | Withdrawal policy persisted to localStorage (versioned key), inflation rate with storage migration |
 | ✅ | Full test suite: Rust unit tests + React component tests + integration |
-| 🚧 | Monte Carlo engine and results dashboard (Phase 9–10) |
+| ✅ | Monte Carlo engine (Rust/WASM) — 10,000 seeded price paths per run, each stepped through the withdrawal engine, fully reproducible |
+| ✅ | Monte Carlo outcome summary — % ran out of money, % below minimum, % success, % of years at desired spend (success paths only) |
+| ✅ | Failure forensics — survival curve, failure-year histogram, median failure year, shortfall stats, legacy final-BTC stats, phase-time shares |
+| ✅ | Loading spinner during plan runs |
+| 🚧 | Fan charts for the Monte Carlo percentile series (Phase 10) |
 | 🚧 | Buy-Borrow-Die preset with loan modes (Phase 12) |
 | 🚧 | Scenario comparison (Phase 13) |
 | 🚧 | Today: the advisor — monthly check-in + deviation scoring (Phase 15) |
@@ -248,7 +252,8 @@ New changes are managed with the **OpenSpec** workflow: each change lives in `op
 | 6 | User stack configuration (parameter panel) | ✅ Done |
 | 7 | Unified withdrawal policy (presets: Classic FIRE, Fixed %, Guardrails, Valuation-based) | ✅ Done |
 | 8 | Fixed % strategy | Merged into 7 |
-| 9–10 | Monte Carlo engine + Results dashboard | 🚧 Planned |
+| 9 | Monte Carlo engine + outcome summary + failure forensics | ✅ Done |
+| 10 | Results dashboard — fan charts | 🚧 Planned |
 | 11 | Guardrails strategy | Merged into 7 |
 | 12 | Buy-Borrow-Die preset | 🚧 Planned |
 | 13 | Scenario comparison | 🚧 Planned |
