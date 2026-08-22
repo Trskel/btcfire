@@ -6,6 +6,21 @@ BTCFire is a client-side Bitcoin retirement simulator. It helps people answer: *
 
 It runs thousands of Monte Carlo simulations across different price models and withdrawal strategies, then presents the results as clear probabilities and visualizations.
 
+### The two faces
+
+BTCFire has two faces over one core: the withdrawal **policy** — a named preset (Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom) over a shared knob set (anchor, rate, inflation, cadence, guardrails, cash buffer).
+
+1. **Plan** — define a policy and simulate it across thousands of Monte Carlo futures: survival rates, percentile bands, year-by-year outcomes. Results update live as parameters are dragged. Organized as three tabs (Scenario · Price model · Withdrawal) under the chart.
+2. **Today** — once retired, the same policy evaluated against today's measured state: what does my plan prescribe this month, and what would deviating cost? The simulator clones policy state across 10,000 paths; the advisor holds exactly one — the real one, kept in localStorage.
+
+Lifecycle: **Decide → Initialize → Execute → Steer**. The lifestyle ratchet and re-simulation conditioned on today loop back into Decide.
+
+### Advisor principles
+
+- **Manual state.** Users enter their own balances. Nothing is fetched from their wallets; no accounts, no sync.
+- **Ritual, not notifications.** A monthly check-in, not push alerts — no server exists to send them, and the discipline is the point.
+- **Decision support, not prescription.** The advisor executes the user's policy and scores deviations ("what if"), but never optimizes their life. It speaks in the user's own policy language.
+
 ## Who it's for
 
 A broad audience — from bitcoin holders curious about retirement math to experienced FIRE planners who want to model BTC-denominated portfolios.
