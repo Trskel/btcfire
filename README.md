@@ -17,7 +17,9 @@ Traditional retirement calculators work for fiat portfolios — stocks, bonds, 4
 
 BTCFire bridges that gap.
 
-It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), runs **thousands of Monte Carlo scenarios** to capture uncertainty, and tests your holdings against **different withdrawal strategies** (Classic FIRE, Guardrails, Buy-Borrow-Die). The output isn't a single number — it's a distribution of outcomes and a success probability.
+It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), runs **thousands of Monte Carlo scenarios** to capture uncertainty, and tests your holdings against **withdrawal policies** — unified presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, Buy-Borrow-Die) built from a shared knob set. The output isn't a single number — it's a distribution of outcomes and a success probability.
+
+Two faces, one core: **Plan** lets you define a policy and simulate thousands of futures; **Today** (once you're retired) evaluates that same policy against your real, present state — what does my plan prescribe this month, and what would deviating cost?
 
 ## How It Works
 
@@ -27,8 +29,8 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 
 1. **Fetch historic data** — BTC daily price history from Binance's public API (daily klines fetched in batches back to genesis), cached locally with stale-cache detection.
 2. **Fit a price model** — Power Law regression, Stock-to-Flow, or configurable custom parameters, extended decades into the future with statistical confidence bands.
-3. **Define your stack** — BTC holdings, annual spending, inflation rate, retirement timeline.
-4. **Choose a withdrawal strategy** — Classic FIRE (fixed real spending), Guardrails (adaptive spending), Buy-Borrow-Die (leverage instead of selling).
+3. **Define your stack** — BTC holdings, spending (floor + desired), inflation rate, retirement timeline.
+4. **Choose a withdrawal policy** — a preset (Classic FIRE, Fixed %, Guardrails, Valuation-based, Buy-Borrow-Die) over a shared knob set: anchor, rate, inflation, payout/review cadence, guardrails, cash buffer.
 5. **Run the simulation** — Rust/WASM Monte Carlo engine runs 1,000+ scenarios in milliseconds, right in your browser.
 6. **Explore results** — fan charts, percentile bands, success rates, and year-by-year breakdowns.
 
@@ -50,10 +52,14 @@ It models the future using **multiple price models** (Power Law, Stock-to-Flow, 
 | ✅ | Reactive model overlay on the chart — no "Run" button needed |
 | ✅ | Light / dark theme with system preference detection |
 | ✅ | Mobile-first responsive design (usable at 375px) |
+| ✅ | Parameter input panel — BTC holdings, spend floor + desired spend, retirement timeline, persisted to localStorage |
 | ✅ | Full test suite: Rust unit tests + React component tests + integration |
-| 🚧 | Withdrawal strategies (Phase 7–12) |
+| 🚧 | Unified withdrawal policy engine with presets — Classic FIRE, Fixed %, Guardrails, Valuation-based (Phase 7) |
 | 🚧 | Monte Carlo engine and results dashboard (Phase 9–10) |
+| 🚧 | Buy-Borrow-Die preset with loan modes (Phase 12) |
 | 🚧 | Scenario comparison (Phase 13) |
+| 🚧 | Today: the advisor — monthly check-in + deviation scoring (Phase 15) |
+| 🚧 | Steer: conditional planning and lifestyle ratchet (Phase 16) |
 
 ## 🔒 Privacy by Design
 
@@ -96,8 +102,10 @@ Monte Carlo retirement modeling requires running thousands of simulations with c
 │  │               │   │                 │  │
 │  │ • ECharts     │◄──│ • Power Law     │  │
 │  │ • shadcn/ui   │   │ • S2F           │  │
-│  │ • Tailwind    │   │ • Withdrawals   │  │
+│  │ • Tailwind    │   │ • Policy engine │  │
 │  │ • localStorage│   │ • Monte Carlo   │  │
+│  │ • Today       │   │                 │  │
+│  │   advisor     │   │                 │  │
 │  └───────────────┘   └─────────────────┘  │
 │           │                               │
 │           ▼                               │
@@ -220,6 +228,7 @@ New changes are managed with the **OpenSpec** workflow: each change lives in `op
 - **Education over prescription.** Every model and strategy comes with plain-language explanations of its assumptions and limitations. Users make informed choices.
 - **Simplicity by default, depth on demand.** Sensible defaults work out of the box. Power users get full parameter control.
 - **Real-time feedback.** No "Run Simulation" button. Results update as you drag sliders.
+- **One policy, two faces.** The same withdrawal-policy core powers planning simulations and the in-retirement "Today" advisor — decide once, execute monthly.
 
 ## 📋 Roadmap
 
@@ -230,12 +239,18 @@ New changes are managed with the **OpenSpec** workflow: each change lives in `op
 | 3 | Power Law price model + chart overlay | ✅ Done |
 | 4 | Stock-to-Flow price model | ✅ Done |
 | 5 | Bitcoin24 price model | ✅ Done |
-| 6 | User stack configuration | 🚧 Planned |
-| 7–8 | Withdrawal strategies (Classic FIRE, Fixed %) | 🚧 Planned |
+| 6 | User stack configuration (parameter panel) | ✅ Done |
+| 7 | Unified withdrawal policy (presets: Classic FIRE, Fixed %, Guardrails, Valuation-based) | 🚧 Planned |
+| 8 | Fixed % strategy | Merged into 7 |
 | 9–10 | Monte Carlo engine + Results dashboard | 🚧 Planned |
-| 11–12 | Guardrails + Buy-Borrow-Die strategies | 🚧 Planned |
+| 11 | Guardrails strategy | Merged into 7 |
+| 12 | Buy-Borrow-Die preset | 🚧 Planned |
 | 13 | Scenario comparison | 🚧 Planned |
-| 14–15 | Polish, education, deployment, PWA | 🚧 Planned |
+| 14 | Polish and education | 🚧 Planned |
+| 15 | Today: the advisor (in-retirement mode) | 🚧 Planned |
+| 16 | Steer: conditional planning and ratchet | 🚧 Planned |
+| 17 | Deployment and optimization | 🚧 Planned |
+| 18 | Taxes | 💭 Candidate |
 
 ## ⚠️ Disclaimer
 
