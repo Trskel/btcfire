@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { InfoButton } from '@/components/ui/info-button'
 import { MonteCarloSummary } from '@/components/controls/MonteCarloSummary'
 import { MonteCarloForensics } from '@/components/controls/MonteCarloForensics'
+import { MonteCarloVisualization } from '@/components/controls/MonteCarloVisualization'
 import { RESULTS_INFO } from '@/content/info'
 
 interface WithdrawalResultsProps {
@@ -178,6 +179,8 @@ export function WithdrawalResults({
           <MonteCarloForensics monteCarlo={run.monteCarlo ?? null} />
         </>
       )}
+
+      <MonteCarloVisualization run={run} />
 
       {truncated && (
         <p className="text-xs text-muted-foreground">
