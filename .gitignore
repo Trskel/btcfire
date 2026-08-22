@@ -2,3 +2,5 @@ node_modules/
 dist/
 target/
 wasm/pkg/
+wasm/pkg.staging/
+wasm/pkg.old/

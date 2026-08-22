@@ -132,7 +132,7 @@ vi.mock('echarts/core', () => {
   }
 })
 
-vi.mock('echarts/charts', () => ({ LineChart: {}, CustomChart: {} }))
+vi.mock('echarts/charts', () => ({ BarChart: {}, LineChart: {}, CustomChart: {} }))
 vi.mock('echarts/components', () => ({
   GridComponent: {},
   TooltipComponent: {},

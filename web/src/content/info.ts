@@ -109,4 +109,18 @@ export const RESULTS_INFO = {
     "Each tile follows your retirement at a different percentile of the model's price range — P10 is pessimistic, P90 optimistic. 'Depleted' means the stack ran out before your lifespan. The suffix shows the phase of the final year.",
   phase:
     "Where the year's price sits in the model's band: bear (below fair phase low), fair (inside the band), or euphoria (above fair phase high). Phases reflect the model's view, not market advice.",
+  forensics:
+    "A deeper look at the failed futures: when they break, why, and how far below your minimum they fall. It complements the summary — the odds above, the timing and severity here.",
+  survival:
+    "The share of futures still alive each year. It starts at 100% and drops as futures fail; the final value equals the success rate. Steeper drops mean failures cluster early.",
+  failureYear:
+    "How many futures fail each year, split by cause. 'Ran out' futures fail in the first year they had nothing left to sell; 'Below minimum' futures fail in the first year spending dropped below your floor.",
+  medianFailureYear:
+    'The middle failure year across all failed futures. Half of the failed futures break down before this year, half after. A later year means failures cluster late in retirement.',
+  shortfall:
+    'How far spending fell below your minimum floor in the worst year of each failed future. The median is the typical worst gap; the p90 is the harsh tail — 10% of failed futures fall short by at least this much.',
+  finalBtc:
+    'The bitcoin left at the end of retirement, across the 10,000 futures. p10 is the pessimistic tail, p50 the typical outcome, p90 the optimistic tail. The success-path median shows the typical bequest among futures that never failed.',
+  phaseTime:
+    'The share of simulated years spent in each market phase, approximated from each year\'s final month. Reflects the model\'s phase view of your sampled futures, not a market forecast.',
 } as const

@@ -123,7 +123,7 @@ The system SHALL support an onboarding mode in which, at retirement, the buffer 
 - **THEN** only the monthly drip is sold until the first euphoria phase, and no lump-sum buffer sale occurs at day one
 
 ### Requirement: Deterministic engine and results
-The system SHALL provide a deterministic engine that steps a policy across the retirement horizon against a price projection and returns year-by-year results including year, BTC balance, cash or buffer, spend, and sold BTC. When stepping monthly under a yearly price projection, prices SHALL be interpolated geometrically between adjacent yearly points.
+The system SHALL provide a deterministic engine that steps a policy across the retirement horizon against a price projection and returns year-by-year results including year, BTC balance, cash or buffer, spend, and sold BTC. The engine SHALL accept an optional starting `RuntimeState` (year, BTC, cash, buffer years, deferred-buffer flag) and, when provided, begin the simulation from that state instead of the retirement-day default. When stepping monthly under a yearly price projection, prices SHALL be interpolated geometrically between adjacent yearly points.
 
 #### Scenario: Deterministic output
 - **WHEN** the same policy, parameters, and price projection are simulated twice
@@ -136,6 +136,18 @@ The system SHALL provide a deterministic engine that steps a policy across the r
 #### Scenario: Interpolation between yearly points
 - **WHEN** the engine steps monthly under yearly model points
 - **THEN** month prices lie geometrically between the enclosing yearly prices
+
+#### Scenario: Default start state
+- **WHEN** no starting state is provided
+- **THEN** the simulation initializes from the configured holdings, zero cash, and the retirement year
+
+#### Scenario: Resume from arbitrary state
+- **WHEN** a starting state of 0.5 BTC, 20,000 USD cash, and a deferred buffer at a given year is provided
+- **THEN** the first simulated year reflects that BTC, cash, and buffer configuration
+
+#### Scenario: Resume from arbitrary state is deterministic
+- **WHEN** the same starting state, policy, parameters, and price projection are simulated twice
+- **THEN** the returned year-by-year results are identical
 
 ### Requirement: Band-path simulation
 The system SHALL run the withdrawal policy over a selected model's band paths — median, ±1σ, ±2σ, and percentile bands where the model emits them — as separate deterministic runs. Each run SHALL compute the market phase from the path price's quantile inside the model's distribution. Every model SHALL emit at least 1σ and 2σ bands so that bear, fair, and euphoria phases are reachable at the default thresholds. A band path SHALL be identified by a stable id and label.
