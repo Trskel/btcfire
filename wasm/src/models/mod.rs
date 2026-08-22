@@ -10,6 +10,9 @@ pub struct ModelPoint {
     pub year: i32,
     pub timestamp_ms: i64,
     pub median_price_usd: f64,
+    /// Optional simulated path price; absent, it defaults to the median.
+    #[serde(default)]
+    pub path_price_usd: Option<f64>,
     pub band_1sigma_low: Option<f64>,
     pub band_1sigma_high: Option<f64>,
     pub band_2sigma_low: Option<f64>,

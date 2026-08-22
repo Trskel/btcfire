@@ -5,6 +5,7 @@ export interface SimulationParams {
   lifespan: number
   minimumSpendUsd: number
   annualSpendUsd: number
+  inflationRate: number
 }
 
 export interface ParamBounds {
@@ -28,6 +29,7 @@ export const PARAM_BOUNDS: Record<keyof SimulationParams, ParamBounds> = {
   lifespan: { min: 50, max: 120, step: 1, default: 90 },
   minimumSpendUsd: { min: 0, max: 250000, step: 500, default: 20000 },
   annualSpendUsd: { min: 0, max: 10000000, step: 1000, default: 50000 },
+  inflationRate: { min: 0, max: 10, step: 0.5, default: 3 },
 }
 
 export function defaultSimulationParams(): SimulationParams {
@@ -38,6 +40,7 @@ export function defaultSimulationParams(): SimulationParams {
     lifespan: PARAM_BOUNDS.lifespan.default,
     minimumSpendUsd: PARAM_BOUNDS.minimumSpendUsd.default,
     annualSpendUsd: PARAM_BOUNDS.annualSpendUsd.default,
+    inflationRate: PARAM_BOUNDS.inflationRate.default,
   }
 }
 

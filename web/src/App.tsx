@@ -1,6 +1,9 @@
-import { useState, useCallback, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTab, TabsPanel } from '@/components/ui/tabs'
+import { ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { PriceChart } from '@/components/charts/PriceChart'
 import { PowerLawControls } from '@/components/controls/PowerLawControls'
 import { S2FControls } from '@/components/controls/S2FControls'
@@ -9,13 +12,27 @@ import { ModelSelector } from '@/components/controls/ModelSelector'
 import type { ModelEntry } from '@/components/controls/ModelSelector'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { ParameterPanel } from '@/components/controls/ParameterPanel'
+import { WithdrawalTab } from '@/components/controls/WithdrawalTab'
+import { WithdrawalResults } from '@/components/controls/WithdrawalResults'
 import { useHistoricPrices } from '@/hooks/useHistoricPrices'
 import { useSimulationParams } from '@/hooks/useSimulationParams'
+import { useWithdrawalPolicy } from '@/hooks/useWithdrawalPolicy'
+import { runWithdrawal, errorMessage } from '@/lib/withdrawal'
+import type { PathId } from '@/lib/withdrawal'
+import type { WithdrawalRun } from '@/lib/withdrawal'
 import type { ModelOverlay, ModelId } from '@/types/models'
+import { MODEL_LABELS } from '@/types/models'
+
+type ControlTab = 'scenario' | 'price-model' | 'withdrawal'
+
+const MODEL_ORDER: ModelId[] = ['power-law', 's2f', 'bitcoin24']
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
   const { params: simParams, setParam: setSimParam } = useSimulationParams()
+  const { policy, dirty, setPreset, updatePolicy } = useWithdrawalPolicy()
+  const [controlsOpen, setControlsOpen] = useState(true)
+  const [activeTab, setActiveTab] = useState<ControlTab>('scenario')
   const [modelOverlays, setModelOverlays] = useState<Record<ModelId, ModelOverlay | null>>({
     'power-law': null,
     's2f': null,
@@ -26,6 +43,14 @@ function App() {
   )
   const [expandedModel, setExpandedModel] = useState<ModelId | null>('power-law')
   const [projectionYears, setProjectionYears] = useState(30)
+  const [withdrawalResult, setWithdrawalResult] = useState<{
+    overlay: ModelOverlay
+    run: WithdrawalRun
+  } | null>(null)
+  const [withdrawalFailure, setWithdrawalFailure] = useState<{
+    overlay: ModelOverlay
+    message: string
+  } | null>(null)
 
   const handleModelChange = useCallback(
     (modelId: ModelId, overlay: ModelOverlay | null) => {
@@ -60,6 +85,53 @@ function App() {
       .map(([, overlay]) => overlay)
       .filter((o): o is ModelOverlay => o !== null)
   }, [modelOverlays, visibleModels])
+
+  const visibleModelIds = useMemo(
+    () => MODEL_ORDER.filter((id) => visibleModels.has(id)),
+    [visibleModels],
+  )
+  const [planModelChoice, setPlanModelChoice] = useState<ModelId | null>(null)
+  const planModelId =
+    planModelChoice && visibleModelIds.includes(planModelChoice)
+      ? planModelChoice
+      : (visibleModelIds[0] ?? null)
+  const engineOverlay = planModelId ? modelOverlays[planModelId] : null
+  const [selectedPathId, setSelectedPathId] = useState<PathId>('median')
+
+  useEffect(() => {
+    if (!engineOverlay) return
+    let cancelled = false
+    runWithdrawal(policy, simParams, engineOverlay)
+      .then((run) => {
+        if (cancelled) return
+        setWithdrawalResult({ overlay: engineOverlay, run })
+        setWithdrawalFailure(null)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setWithdrawalResult(null)
+        setWithdrawalFailure({
+          overlay: engineOverlay,
+          message: errorMessage(err),
+        })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [engineOverlay, policy, simParams])
+
+  const planRun =
+    engineOverlay && withdrawalResult?.overlay === engineOverlay
+      ? withdrawalResult.run
+      : null
+  const planError =
+    engineOverlay && withdrawalFailure?.overlay === engineOverlay
+      ? withdrawalFailure.message
+      : null
+  const planLoading =
+    engineOverlay !== null &&
+    withdrawalResult?.overlay !== engineOverlay &&
+    withdrawalFailure?.overlay !== engineOverlay
 
   const modelEntries: ModelEntry[] = useMemo(() => {
     if (!data) return []
@@ -118,23 +190,8 @@ function App() {
         <ThemeToggle />
       </header>
 
-      <main className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-80">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Scenario</CardTitle>
-              <CardDescription>
-                Personalize the retirement simulation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ParameterPanel params={simParams} onParamChange={setSimParam} />
-            </CardContent>
-          </Card>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <Card>
+      <main className="flex flex-col gap-6">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -185,54 +242,127 @@ function App() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Price Models</CardTitle>
+            <CardTitle>Plan Configuration</CardTitle>
             <CardDescription>
-              Choose which models to overlay on the chart
+              Price model, scenario, and withdrawal policy
             </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data && (
-              <>
-                <div className="mb-4">
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Projection Horizon: {projectionYears}y
-                  </label>
-                  <input
-                    type="range"
-                    min={5}
-                    max={50}
-                    value={projectionYears}
-                    onChange={(e) => setProjectionYears(parseInt(e.target.value))}
-                    className="min-h-[44px] w-full"
-                  />
-                </div>
-                <ModelSelector
-                  models={modelEntries}
-                  visibleModels={visibleModels}
-                  expandedModel={expandedModel}
-                  onToggleVisibility={handleToggleVisibilityWithExpand}
-                  onToggleExpand={handleToggleExpand}
+            <CardAction>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="min-h-[44px] min-w-[44px]"
+                aria-expanded={controlsOpen}
+                aria-label={controlsOpen ? 'Collapse configuration' : 'Expand configuration'}
+                onClick={() => setControlsOpen((open) => !open)}
+              >
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 text-muted-foreground transition-transform',
+                    controlsOpen && 'rotate-180',
+                  )}
                 />
-              </>
-            )}
-            {!data && !isLoading && (
-              <p className="text-sm text-muted-foreground">Price data is required to fit the model.</p>
-            )}
-          </CardContent>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          {controlsOpen && (
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ControlTab)}>
+                <TabsList>
+                  <TabsTab value="price-model">Price model</TabsTab>
+                  <TabsTab value="scenario">Scenario</TabsTab>
+                  <TabsTab value="withdrawal">Withdrawal</TabsTab>
+                </TabsList>
+
+                <TabsPanel value="price-model" keepMounted={activeTab === 'scenario'}>
+                  {data ? (
+                    <ModelSelector
+                      models={modelEntries}
+                      visibleModels={visibleModels}
+                      expandedModel={expandedModel}
+                      onToggleVisibility={handleToggleVisibilityWithExpand}
+                      onToggleExpand={handleToggleExpand}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Price data is required to fit the model.
+                    </p>
+                  )}
+                </TabsPanel>
+
+                <TabsPanel value="scenario">
+                  <div className="mb-4">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Projection Horizon: {projectionYears}y
+                    </label>
+                    <input
+                      type="range"
+                      min={5}
+                      max={50}
+                      value={projectionYears}
+                      onChange={(e) => setProjectionYears(parseInt(e.target.value))}
+                      className="min-h-[44px] w-full"
+                    />
+                  </div>
+                  <ParameterPanel
+                    params={simParams}
+                    onParamChange={setSimParam}
+                    showInflation={policy.anchor !== 'percent_of_current'}
+                  />
+                </TabsPanel>
+
+                <TabsPanel value="withdrawal">
+                  <WithdrawalTab
+                    policy={policy}
+                    dirty={dirty}
+                    onSelectPreset={setPreset}
+                    onUpdatePolicy={updatePolicy}
+                  />
+                </TabsPanel>
+              </Tabs>
+            </CardContent>
+          )}
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Strategies</CardTitle>
-            <CardDescription>Coming in Phase 7</CardDescription>
+            <CardTitle>Your Plan</CardTitle>
+            <CardDescription>
+              Year-by-year withdrawal simulation
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Classic FIRE, fixed percentage, guardrails, and buy-borrow-die withdrawal strategies.
-            </p>
+            {planModelId && visibleModelIds.length > 1 && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="plan-model"
+                  className="text-xs font-medium text-muted-foreground"
+                >
+                  Price model used:
+                </label>
+                <select
+                  id="plan-model"
+                  aria-label="Plan price model"
+                  className="min-h-[44px] rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
+                  value={planModelId}
+                  onChange={(e) => setPlanModelChoice(e.target.value as ModelId)}
+                >
+                  {visibleModelIds.map((id) => (
+                    <option key={id} value={id}>
+                      {MODEL_LABELS[id]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <WithdrawalResults
+              run={planRun}
+              selectedPathId={selectedPathId}
+              onSelectPath={setSelectedPathId}
+              error={planError}
+              loading={planLoading}
+            />
           </CardContent>
         </Card>
-        </div>
       </main>
 
       <footer className="mt-8 border-t border-border pt-4">

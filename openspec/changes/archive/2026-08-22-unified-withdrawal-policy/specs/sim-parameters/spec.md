@@ -26,11 +26,15 @@ The system SHALL define a simulation parameter set with seven fields: initial BT
 - **THEN** the app restores the default 3.0% without discarding the other stored values
 
 ### Requirement: Responsive panel layout
-The system SHALL render the parameter panel inside a tabbed control card below the chart on all viewports. The card SHALL expose three tabs: Scenario (the parameter panel), Price model (model selection and controls), and Withdrawal (withdrawal policy). The chart SHALL render above the control card at every viewport width; there is no sidebar.
+The system SHALL render the parameter panel inside a collapsible tabbed control card below the chart on all viewports. The card SHALL expose three tabs: Price model (model selection and controls), Scenario (the parameter panel and the projection horizon), and Withdrawal (withdrawal policy). The chart SHALL render above the control card at every viewport width; there is no sidebar. The plan results SHALL render below the control card.
 
 #### Scenario: Chart first on mobile
 - **WHEN** the viewport is narrower than 1024px
 - **THEN** the chart appears above the tabbed control card, and the panel is reachable without horizontal scrolling
+
+#### Scenario: Projection horizon in the Scenario tab
+- **WHEN** the Scenario tab renders
+- **THEN** the projection horizon control is the first control in the tab, above the parameter panel
 
 #### Scenario: Same structure on desktop
 - **WHEN** the viewport is 1024px or wider
@@ -39,3 +43,18 @@ The system SHALL render the parameter panel inside a tabbed control card below t
 #### Scenario: Tab switching
 - **WHEN** the user selects a tab in the control card
 - **THEN** only that tab's controls are rendered, and the previously selected tab's content is unmounted
+
+#### Scenario: Results below the configuration
+- **WHEN** the plan has results
+- **THEN** the results card renders below the control card at every viewport width
+
+### Requirement: Collapsible control card
+The control card SHALL collapse and expand via a toggle in its header. When collapsed, no tab panel content SHALL render; when expanded, the previously active tab SHALL be shown again.
+
+#### Scenario: Collapse hides the controls
+- **WHEN** the user clicks the collapse toggle
+- **THEN** the tab panels disappear and the chart remains visible
+
+#### Scenario: Expand restores the active tab
+- **WHEN** the user re-expands the control card
+- **THEN** the previously active tab's content is rendered again

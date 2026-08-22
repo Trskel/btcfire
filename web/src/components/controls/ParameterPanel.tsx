@@ -5,6 +5,7 @@ import { ParameterInput } from './ParameterInput'
 interface ParameterPanelProps {
   params: SimulationParams
   onParamChange: (key: keyof SimulationParams, value: number) => void
+  showInflation?: boolean
 }
 
 interface FieldDef {
@@ -55,12 +56,23 @@ const FIELDS: FieldDef[] = [
     format: (v) => String(Math.round(v)),
     displayFormat: (v) => `$${Math.round(v).toLocaleString('en-US')}`,
   },
+  {
+    key: 'inflationRate',
+    label: 'Annual inflation rate',
+    format: (v) => String(Math.round(v * 10) / 10),
+    displayFormat: (v) => `${(Math.round(v * 10) / 10).toFixed(1)}%`,
+  },
 ]
 
-export function ParameterPanel({ params, onParamChange }: ParameterPanelProps) {
+export function ParameterPanel({
+  params,
+  onParamChange,
+  showInflation = true,
+}: ParameterPanelProps) {
+  const fields = FIELDS.filter((f) => f.key !== 'inflationRate' || showInflation)
   return (
     <div className="space-y-4">
-      {FIELDS.map(({ key, label, format, displayFormat }) => (
+      {fields.map(({ key, label, format, displayFormat }) => (
         <ParameterInput
           key={key}
           label={label}

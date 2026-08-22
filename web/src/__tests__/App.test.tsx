@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import App from '../App'
 
@@ -82,6 +82,18 @@ vi.mock('btcfire-wasm', () => ({
       a: 0.35,
       b: 2.5,
     }),
+  run_withdrawal_wasm: () =>
+    Promise.resolve([
+      {
+        year: 2030,
+        btc: 0.96,
+        cashUsd: 0,
+        bufferYears: 0,
+        spendUsd: 4000,
+        soldBtc: 0.04,
+        phase: null,
+      },
+    ]),
 }))
 
 vi.mock('@/hooks/useHistoricPrices', () => ({
@@ -126,6 +138,10 @@ vi.mock('echarts-for-react', async () => {
   }
 })
 
+function openTab(name: string) {
+  fireEvent.click(screen.getByRole('tab', { name }))
+}
+
 describe('App', () => {
   it('renders the heading and price chart', () => {
     render(<App />)
@@ -139,19 +155,128 @@ describe('App', () => {
     expect(screen.getByText('2 days of data')).toBeInTheDocument()
   })
 
-  it('renders Price Models card with visibility controls', () => {
+  it('renders the tabbed control card with three tabs', () => {
     render(<App />)
-    expect(screen.getByText('Price Models')).toBeInTheDocument()
+    expect(screen.getByText('Plan Configuration')).toBeInTheDocument()
+    const tabs = screen.getAllByRole('tab').map((t) => t.textContent)
+    expect(tabs).toEqual(['Price model', 'Scenario', 'Withdrawal'])
+  })
+
+  it('renders the configuration card above the results card', () => {
+    render(<App />)
+    const config = screen.getByText('Plan Configuration')
+    const plan = screen.getByText('Your Plan')
+    expect(
+      config.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('collapses and re-expands the configuration card', () => {
+    render(<App />)
+    expect(screen.getByText('Initial BTC holdings')).toBeInTheDocument()
+
+    const toggle = screen.getByRole('button', { name: 'Collapse configuration' })
+    fireEvent.click(toggle)
+    expect(screen.queryByText('Initial BTC holdings')).not.toBeInTheDocument()
+    expect(screen.queryAllByRole('tab')).toHaveLength(0)
+    expect(screen.getByText('BTC Price History')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand configuration' }))
+    expect(screen.getByText('Initial BTC holdings')).toBeInTheDocument()
+    expect(screen.getAllByRole('tab')).toHaveLength(3)
+  })
+
+  it('keeps the active tab when the configuration collapses', () => {
+    render(<App />)
+    openTab('Withdrawal')
+    expect(screen.getByRole('button', { name: /Classic FIRE/ })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse configuration' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Expand configuration' }))
+    expect(screen.getByRole('button', { name: /Classic FIRE/ })).toBeInTheDocument()
+    expect(screen.queryByText('Initial BTC holdings')).not.toBeInTheDocument()
+  })
+
+  it('shows the scenario panel with the projection horizon by default', () => {
+    render(<App />)
+    expect(screen.getByText('Initial BTC holdings')).toBeInTheDocument()
+    expect(screen.getByText('Annual inflation rate')).toBeInTheDocument()
+    expect(screen.getByText('Projection Horizon: 30y')).toBeInTheDocument()
+    expect(screen.queryByText('Your Scenario')).not.toBeInTheDocument()
+
+    const slider = screen.getByRole('slider')
+    const holdings = screen.getByText('Initial BTC holdings')
+    expect(
+      slider.compareDocumentPosition(holdings) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('switches to the Price model tab and shows model controls', () => {
+    render(<App />)
+    openTab('Price model')
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[]
+    expect(checkboxes).toHaveLength(3)
+    expect(checkboxes[0]).toBeChecked()
+    expect(checkboxes[1]).not.toBeChecked()
     expect(screen.getAllByText('Power Law').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('S2F').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Bitcoin24').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('Power Law is checked and expanded by default', () => {
+  it('unmounts the previous tab content when switching', () => {
     render(<App />)
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[]
-    expect(checkboxes).toHaveLength(3)
-    expect(checkboxes[0]).toBeChecked()
-    expect(checkboxes[1]).not.toBeChecked()
+    expect(screen.getByText('Initial BTC holdings')).toBeInTheDocument()
+    expect(screen.getByText('Projection Horizon: 30y')).toBeInTheDocument()
+    openTab('Price model')
+    expect(screen.queryByText('Initial BTC holdings')).not.toBeInTheDocument()
+    expect(screen.queryByText('Projection Horizon: 30y')).not.toBeInTheDocument()
+    openTab('Withdrawal')
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
+  })
+
+  it('renders the Withdrawal tab with preset cards', () => {
+    render(<App />)
+    openTab('Withdrawal')
+    expect(screen.getByRole('button', { name: /Classic FIRE/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Fixed %/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Guardrails/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Valuation-based/ })).toBeInTheDocument()
+  })
+
+  it('renders the plan results card', () => {
+    render(<App />)
+    expect(screen.getByText('Your Plan')).toBeInTheDocument()
+  })
+
+  it('shows a plan model picker when several models are visible', async () => {
+    vi.useFakeTimers()
+    try {
+      render(<App />)
+      await act(async () => {
+        vi.advanceTimersByTime(400)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Price model' }))
+      const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[]
+      fireEvent.click(checkboxes[1])
+
+      await act(async () => {
+        vi.advanceTimersByTime(400)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+
+      const picker = screen.getByLabelText('Plan price model') as HTMLSelectElement
+      expect(picker).toBeInTheDocument()
+      expect(picker.value).toBe('power-law')
+      expect(screen.getByText('Price model used:')).toBeInTheDocument()
+
+      fireEvent.change(picker, { target: { value: 's2f' } })
+      expect(picker.value).toBe('s2f')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
