@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { useState } from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { WithdrawalResults } from '@/components/controls/WithdrawalResults'
 import type { PathId, WithdrawalRun } from '@/lib/withdrawal'
@@ -23,6 +23,7 @@ vi.mock('echarts/components', () => ({
   DataZoomComponent: {},
   ToolboxComponent: {},
   MarkLineComponent: {},
+  LegendComponent: {},
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
@@ -51,6 +52,27 @@ function yearResult(
     soldBtc,
     phase,
   }
+}
+
+function makePercentiles(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    year: 2030 + i,
+    p10: 1 + i,
+    p25: 2 + i,
+    p50: 3 + i,
+    p75: 4 + i,
+    p90: 5 + i,
+    spendP10: 1000 + i * 100,
+    spendP25: 2000 + i * 100,
+    spendP50: 3000 + i * 100,
+    spendP75: 4000 + i * 100,
+    spendP90: 5000 + i * 100,
+    bufferYearsP10: 0.5 + i,
+    bufferYearsP25: 1.5 + i,
+    bufferYearsP50: 2.5 + i,
+    bufferYearsP75: 3.5 + i,
+    bufferYearsP90: 4.5 + i,
+  }))
 }
 
 function makeRun(): WithdrawalRun {
@@ -470,5 +492,53 @@ describe('WithdrawalResults', () => {
       screen.getByRole('button', { name: 'About Median failure year' }),
     )
     expect(screen.getByText(/middle failure year/)).toBeInTheDocument()
+  })
+
+  it('renders the Monte Carlo visualization between forensics and the price paths', () => {
+    const run = makeRun()
+    run.monteCarlo!.percentiles = makePercentiles(2)
+    render(<Harness run={run} />)
+
+    expect(screen.getByText('Year-by-year range')).toBeInTheDocument()
+    expect(screen.getByText('Year-by-year distribution')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'BTC holdings' }),
+    ).toBeInTheDocument()
+
+    const forensicsNode = screen.getByText('Failure forensics').closest('div')
+    const vizNode = screen.getByText('Year-by-year range').closest('div')
+    const stripNode = screen.getByRole('group', { name: 'Price paths' })
+    expect(
+      forensicsNode!.compareDocumentPosition(vizNode!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      vizNode!.compareDocumentPosition(stripNode) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    const distributionTable = screen
+      .getAllByRole('table')
+      .find((t) => within(t).queryByText('Median BTC'))
+    expect(distributionTable).toBeTruthy()
+    expect(within(distributionTable!).getAllByRole('row')).toHaveLength(3)
+  })
+
+  it('hides the visualization section when the horizon is zero', () => {
+    const run = makeRun()
+    run.totalYears = 0
+    run.monteCarlo!.percentiles = makePercentiles(2)
+    render(<Harness run={run} />)
+    expect(screen.queryByText('Year-by-year range')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Year-by-year distribution'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides the visualization section when there is no Monte Carlo run', () => {
+    const run = makeRun()
+    run.monteCarlo = null
+    render(<Harness run={run} />)
+    expect(screen.queryByText('Year-by-year range')).not.toBeInTheDocument()
   })
 })

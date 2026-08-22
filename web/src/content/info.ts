@@ -124,3 +124,24 @@ export const RESULTS_INFO = {
   phaseTime:
     'The share of simulated years spent in each market phase, approximated from each year\'s final month. Reflects the model\'s phase view of your sampled futures, not a market forecast.',
 } as const
+
+export const VISUALIZATION_INFO = {
+  fanChartBands:
+    'The shaded fan shows the spread of the 10,000 simulated futures year by year. The wide outer band spans the 10th to the 90th percentile; the darker inner band the 25th to the 75th. The solid line is the median. Wider bands mean more uncertainty about that year.',
+  metricBtc:
+    'The typical bitcoin holdings left in each retirement year, with the P10–P90 and P25–P75 bands around it. Flat or falling bands show futures where the stack shrank faster.',
+  metricSpend:
+    'The annual spending each year across all futures, adjusted for inflation, with the P10–P90 and P25–P75 bands around the median. Drops mean futures where spending had to be cut.',
+  metricBuffer:
+    'How many years of spending the cash buffer covers each year, with the P10–P90 and P25–P75 bands around the median. A healthy buffer smooths bear markets without selling bitcoin.',
+  colMedianBtc:
+    'The typical (median) bitcoin holdings for each retirement year across all simulated futures.',
+  colBtcRange:
+    'The middle 80% range of bitcoin holdings for each year — from the 10th to the 90th percentile of the futures.',
+  colMedianSpend:
+    'The typical annual spending in each retirement year across all futures, adjusted for inflation.',
+  colMedianBuffer:
+    'The typical number of years of spending held in the cash buffer in each retirement year.',
+  colSurvival:
+    'The share of futures still alive in each year — not run out of money and never forced below minimum spending. It starts at 100% and declines as futures fail.',
+} as const

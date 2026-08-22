@@ -145,6 +145,7 @@ vi.mock('echarts/components', () => ({
   DataZoomComponent: {},
   ToolboxComponent: {},
   MarkLineComponent: {},
+  LegendComponent: {},
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
