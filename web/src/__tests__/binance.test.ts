@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchBtcPriceHistory } from '@/lib/api/coingecko'
+import { fetchBtcPriceTail } from '@/lib/api/binance'
+import { staticEndMs } from '@/lib/data/staticHistory'
 
 const mockKlines = [
   [1367107200000, '135.0', '140.0', '130.0', '135.3', '1000.0', 1367193599999, '135000.0', 100, '500.0', '67500.0', '0'],
@@ -8,7 +9,7 @@ const mockKlines = [
   [1367366400000, '138.0', '142.0', '137.0', '139.0', '900.0', 1367452799999, '125000.0', 90, '450.0', '62500.0', '0'],
 ]
 
-describe('fetchBtcPriceHistory', () => {
+describe('fetchBtcPriceTail', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
   })
@@ -18,7 +19,7 @@ describe('fetchBtcPriceHistory', () => {
       new Response(JSON.stringify(mockKlines), { status: 200 }),
     )
 
-    const result = await fetchBtcPriceHistory()
+    const result = await fetchBtcPriceTail()
 
     expect(result).toHaveLength(3)
     expect(result[0]).toEqual({ timestamp_ms: 1367107200000, price_usd: 135.3 })
@@ -26,17 +27,18 @@ describe('fetchBtcPriceHistory', () => {
     expect(result[2]).toEqual({ timestamp_ms: 1367366400000, price_usd: 139.0 })
   })
 
-  it('constructs the correct URL', async () => {
+  it('constructs the correct URL, starting after the static history', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(JSON.stringify(mockKlines), { status: 200 }),
     )
 
-    await fetchBtcPriceHistory()
+    await fetchBtcPriceTail()
 
     const url = fetchSpy.mock.calls[0][0] as string
-    expect(url).toContain('/api/binance')
+    expect(url).toContain('https://api.binance.com/api/v3/klines')
     expect(url).toContain('BTCUSDT')
     expect(url).toContain('interval=1d')
+    expect(url).toContain(`startTime=${staticEndMs + 1}`)
   })
 
   it('throws on HTTP errors', async () => {
@@ -44,7 +46,7 @@ describe('fetchBtcPriceHistory', () => {
       new Response('Rate limited', { status: 429 }),
     )
 
-    await expect(fetchBtcPriceHistory()).rejects.toThrow('Binance API error: 429')
+    await expect(fetchBtcPriceTail()).rejects.toThrow('Binance API error: 429')
   })
 
   it('throws on invalid response shape', async () => {
@@ -52,6 +54,6 @@ describe('fetchBtcPriceHistory', () => {
       new Response(JSON.stringify({ wrong: 'shape' }), { status: 200 }),
     )
 
-    await expect(fetchBtcPriceHistory()).rejects.toThrow('unexpected response shape')
+    await expect(fetchBtcPriceTail()).rejects.toThrow('unexpected response shape')
   })
 })

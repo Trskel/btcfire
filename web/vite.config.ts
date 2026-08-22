@@ -49,13 +49,6 @@ export default defineConfig({
     fs: {
       allow: ['.', '../wasm/pkg'],
     },
-    proxy: {
-      '/api/binance': {
-        target: 'https://api.binance.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/binance/, ''),
-      },
-    },
   },
   resolve: {
     alias: {

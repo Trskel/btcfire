@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-22
+
+- Bundle static BTC price history (Bitstamp daily candles back to 2011-08-18) as a shipped data file; runtime fetches now cover only the tail after the snapshot (`npm run snapshot:history` regenerates)
+- Merge static + live series at runtime (dedupe by timestamp, live wins); fallback ladder is fresh cache → fetch → stale cache → static-only
+- Make the price cache generation-aware so a newly shipped static file invalidates older cached data
+- Call Binance klines directly (CORS confirmed) and remove the Vite dev proxy
+- Rename the price API client `coingecko.ts` → `binance.ts`
+- Note: model fits now use ~15 years of data (2011 →) instead of ~9 (2017 →)
+
 ## 2026-08-21
 
 - Fix custom percentile bands bug: stop double-dividing percentiles by 100 in TS, use `percentile()` lookup in Rust
