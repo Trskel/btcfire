@@ -145,10 +145,11 @@ pub fn run_s2f(config: S2FConfig, historic_data: Vec<PricePoint>) -> Result<S2FR
             year,
             timestamp_ms: jan1_ms,
             median_price_usd: median,
+            path_price_usd: None,
             band_1sigma_low: Some(pow10(median_log - sigma)),
             band_1sigma_high: Some(pow10(median_log + sigma)),
-            band_2sigma_low: None,
-            band_2sigma_high: None,
+            band_2sigma_low: Some(pow10(median_log - sigma * 2.0)),
+            band_2sigma_high: Some(pow10(median_log + sigma * 2.0)),
             band_p10: None,
             band_p90: None,
             band_p25: None,
@@ -291,6 +292,26 @@ mod tests {
                 assert!(low < point.median_price_usd, "1σ low should be below median");
                 assert!(high > point.median_price_usd, "1σ high should be above median");
             }
+        }
+    }
+
+    #[wasm_bindgen_test]
+    fn two_sigma_bands_enclose_one_sigma_bands() {
+        let data = sample_data();
+        let config = S2FConfig {
+            projection_years: 30,
+        };
+        let result = run_s2f(config, data).unwrap();
+
+        for point in &result.points {
+            let (Some(l1), Some(h1)) = (point.band_1sigma_low, point.band_1sigma_high) else {
+                panic!("1σ bands should be present");
+            };
+            let (Some(l2), Some(h2)) = (point.band_2sigma_low, point.band_2sigma_high) else {
+                panic!("2σ bands should be present");
+            };
+            assert!(l2 < l1, "2σ low should be below 1σ low");
+            assert!(h2 > h1, "2σ high should be above 1σ high");
         }
     }
 

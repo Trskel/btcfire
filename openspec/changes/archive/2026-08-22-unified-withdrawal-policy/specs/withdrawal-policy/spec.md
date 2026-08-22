@@ -137,6 +137,48 @@ The system SHALL provide a deterministic engine that steps a policy across the r
 - **WHEN** the engine steps monthly under yearly model points
 - **THEN** month prices lie geometrically between the enclosing yearly prices
 
+### Requirement: Band-path simulation
+The system SHALL run the withdrawal policy over a selected model's band paths — median, ±1σ, ±2σ, and percentile bands where the model emits them — as separate deterministic runs. Each run SHALL compute the market phase from the path price's quantile inside the model's distribution. Every model SHALL emit at least 1σ and 2σ bands so that bear, fair, and euphoria phases are reachable at the default thresholds. A band path SHALL be identified by a stable id and label.
+
+#### Scenario: Band-path phases differ from the median
+- **WHEN** the plan simulates the +2σ path of any model
+- **THEN** the path's phases include euphoria, while the median path reports fair throughout
+
+#### Scenario: Bear phase on the low band
+- **WHEN** the plan simulates the −1σ path
+- **THEN** the path's phases include bear
+
+#### Scenario: Band-path enumeration is deterministic
+- **WHEN** the same policy, parameters, and model points are simulated twice
+- **THEN** the set of band-path runs and their results are identical
+
+#### Scenario: Path tiles are named by direction
+- **WHEN** the path strip renders
+- **THEN** the tiles use directional names — Medium, Bearish, Bullish (Deep bear and Deep bull for 2σ) — with the band descriptor (fair, −1σ, +1σ, −2σ, +2σ) on the second line and the path outcome on the third
+
+#### Scenario: Missing path price falls back to the median
+- **WHEN** a model point carries no path price
+- **THEN** the run uses the model median as the path price
+
+### Requirement: Single plan model
+The system SHALL drive the withdrawal plan from exactly one selected price model at a time. The plan results SHALL label the driving model ("Price model used") and offer the selection there, among the currently visible models, defaulting to the first visible one and falling back to the first visible when the selected model is hidden. The chart MAY overlay multiple models independently of the plan model.
+
+#### Scenario: Default plan model
+- **WHEN** models become visible and none is selected
+- **THEN** the plan runs against the first visible model
+
+#### Scenario: Model selector labeled in the results
+- **WHEN** the plan renders with more than one visible model
+- **THEN** the results section shows a "Price model used" selector listing the visible models
+
+#### Scenario: Selected model hidden
+- **WHEN** the plan model is hidden in the price model tab
+- **THEN** the plan falls back to the first remaining visible model
+
+#### Scenario: Path selection
+- **WHEN** the user picks a band path in the Plan card
+- **THEN** the year-by-year results for that path are rendered, and a summary strip shows each path's outcome
+
 ### Requirement: Policy persistence
 The system SHALL persist the withdrawal policy to localStorage under a versioned key and restore it on load, clamping invalid values and falling back to the Classic FIRE preset on corrupt or unknown-version data.
 

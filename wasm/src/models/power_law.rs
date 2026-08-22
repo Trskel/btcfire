@@ -190,6 +190,7 @@ fn compute_band_points(
             year,
             timestamp_ms: jan1_ms,
             median_price_usd: median,
+            path_price_usd: None,
             band_1sigma_low: None,
             band_1sigma_high: None,
             band_2sigma_low: None,

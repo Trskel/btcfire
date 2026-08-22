@@ -2,6 +2,7 @@ export interface ModelPoint {
   year: number
   timestamp_ms: number
   median_price_usd: number
+  path_price_usd?: number | null
   band_1sigma_low: number | null
   band_1sigma_high: number | null
   band_2sigma_low: number | null

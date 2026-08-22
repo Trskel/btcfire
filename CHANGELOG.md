@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-22 — Unified withdrawal policy (Phase 7)
+
+- Implement Phase 7: unified withdrawal policy engine in Rust/WASM — presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom) over a shared knob set: anchor (% of initial / % of current / fixed USD), rate or spend, payout frequency, review cadence, guardrails (ceiling/floor thresholds, adjustment size, prosperity rule), cash buffer, and valuation knobs
+- Deterministic engine: yearly/monthly stepping with geometric interpolation between yearly model points; inflation referencing from `SimulationParams` (amount-based spend + spend floor; %-of-current unaffected); Guyton-Klinger guardrails; valuation state machine with bear/fair/euphoria phases from the model-band quantile, cash buffer (frozen/organic/recharge), safety valve, and deferred onboarding
+- Band-path simulation: the plan runs the selected model's median, ±1σ, ±2σ, and percentile paths as separate deterministic runs; `ModelPoint` gains an optional path price; S2F and Bitcoin24 now emit ±2σ bands so euphoria is reachable on every model
+- New `run_withdrawal_wasm` binding returning year-by-year results (year, BTC, cash, buffer years, spend, sold BTC, phase)
+- New UI: collapsible Plan Configuration card with tabs (Price model · Scenario · Withdrawal), chart-first layout with the sidebar removed; projection horizon moved into the Scenario tab
+- Withdrawal tab: preset cards with dirty marker (preset identity preserved), knob visibility rules, 44px touch targets
+- Your Plan results: single plan-model selector ("Price model used"), directional path tiles (Medium/Bearish/Bullish, Deep bear/Deep bull) with band descriptor and per-path outcome (final BTC, depletion year, phase), year-by-year cards on mobile / table on desktop, projection-coverage note
+- `SimulationParams` gains `inflationRate` (0–10%, default 3.0) with storage migration; withdrawal policy persists under `btcfire.withdrawalPolicy.v1`
+- 42 Rust/WASM tests + 97 frontend tests
+
 ## 2026-08-22
 
 - Bundle static BTC price history (Bitstamp daily candles back to 2011-08-18) as a shipped data file; runtime fetches now cover only the tail after the snapshot (`npm run snapshot:history` regenerates)

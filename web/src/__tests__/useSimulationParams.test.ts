@@ -23,6 +23,7 @@ describe('useSimulationParams', () => {
       lifespan: 90,
       minimumSpendUsd: 20000,
       annualSpendUsd: 50000,
+      inflationRate: 3,
     })
   })
 
@@ -37,6 +38,37 @@ describe('useSimulationParams', () => {
     expect(result.current.params.holdingsBtc).toBe(2.5)
     expect(result.current.params.currentAge).toBe(42)
     expect(result.current.params.lifespan).toBe(90)
+  })
+
+  it('restores the default inflation rate for pre-existing storage', () => {
+    localStorage.setItem(
+      SIM_PARAMS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        params: { holdingsBtc: 4, currentAge: 50, annualSpendUsd: 60000 },
+      }),
+    )
+
+    const { result } = renderHook(() => useSimulationParams())
+
+    expect(result.current.params.holdingsBtc).toBe(4)
+    expect(result.current.params.currentAge).toBe(50)
+    expect(result.current.params.annualSpendUsd).toBe(60000)
+    expect(result.current.params.inflationRate).toBe(3)
+  })
+
+  it('clamps stored inflation rate to bounds', () => {
+    localStorage.setItem(
+      SIM_PARAMS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        params: { holdingsBtc: 1, inflationRate: 99 },
+      }),
+    )
+
+    const { result } = renderHook(() => useSimulationParams())
+
+    expect(result.current.params.inflationRate).toBe(PARAM_BOUNDS.inflationRate.max)
   })
 
   it('clamps out-of-bounds stored values', () => {

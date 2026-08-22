@@ -1,6 +1,6 @@
 # BTCFire — Bitcoin Retirement Simulator
 
-**Your Bitcoin. Your retirement. Your privacy.** BTCFire runs thousands of Monte Carlo simulations in your browser so you can model whether a BTC-denominated portfolio can sustain you through retirement. No servers, no accounts, no data leaves your machine.
+**Your Bitcoin. Your retirement. Your privacy.** BTCFire simulates retirement scenarios entirely in your browser — today via deterministic band-path simulations, with Monte Carlo coming next — so you can model whether a BTC-denominated portfolio can sustain you through retirement. No servers, no accounts, no data leaves your machine.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
@@ -17,7 +17,7 @@ Traditional retirement calculators work for fiat portfolios — stocks, bonds, 4
 
 BTCFire bridges that gap.
 
-It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), runs **thousands of Monte Carlo scenarios** to capture uncertainty, and tests your holdings against **withdrawal policies** — unified presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, Buy-Borrow-Die) built from a shared knob set. The output isn't a single number — it's a distribution of outcomes and a success probability.
+It models the future using **multiple price models** (Power Law, Stock-to-Flow, Bitcoin24), tests your holdings against **withdrawal policies** — unified presets (Classic FIRE, Fixed %, Guardrails, Valuation-based, and later Buy-Borrow-Die) built from a shared knob set — and simulates each model's median and confidence-band paths against your plan. The output is a year-by-year plan per path — BTC left, cash buffer, and spend — with Monte Carlo outcome distributions and success probabilities coming in Phase 9.
 
 Two faces, one core: **Plan** lets you define a policy and simulate thousands of futures; **Today** (once you're retired) evaluates that same policy against your real, present state — what does my plan prescribe this month, and what would deviating cost?
 
@@ -29,10 +29,10 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 
 1. **Fetch historic data** — BTC daily price history from Binance's public API (daily klines fetched in batches back to genesis), cached locally with stale-cache detection.
 2. **Fit a price model** — Power Law regression, Stock-to-Flow, or configurable custom parameters, extended decades into the future with statistical confidence bands.
-3. **Define your stack** — BTC holdings, spending (floor + desired), inflation rate, retirement timeline.
-4. **Choose a withdrawal policy** — a preset (Classic FIRE, Fixed %, Guardrails, Valuation-based, Buy-Borrow-Die) over a shared knob set: anchor, rate, inflation, payout/review cadence, guardrails, cash buffer.
-5. **Run the simulation** — Rust/WASM Monte Carlo engine runs 1,000+ scenarios in milliseconds, right in your browser.
-6. **Explore results** — fan charts, percentile bands, success rates, and year-by-year breakdowns.
+3. **Define your stack** — BTC holdings, spending (floor + desired), inflation rate, retirement timeline, and the projection horizon.
+4. **Choose a withdrawal policy** — a preset (Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom) over a shared knob set: anchor, rate, inflation, payout/review cadence, guardrails, cash buffer, valuation.
+5. **Run the simulation** — the Rust/WASM engine steps your policy year by year (or month by month) along the selected model's median and band paths, instantly in your browser.
+6. **Explore results** — year-by-year BTC, cash buffer, and spend per path, with per-path outcomes (final BTC, depletion year, phase); fan charts and success rates arrive with Monte Carlo (Phase 9).
 
 ## ✨ Features (so far)
 
@@ -43,7 +43,7 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 | ✅ | Stock-to-Flow (S2F) price model (log price ~ log S2F regression) |
 | ✅ | Bitcoin24 price model (CAGR regression, ±1σ confidence bands) |
 | ✅ | Checkbox visibility controls — show multiple model overlays on the chart simultaneously |
-| ✅ | Shared projection horizon slider — one control for all models |
+| ✅ | Shared projection horizon slider — one control for all models (in the Scenario tab) |
 | ✅ | Expandable controls panels per model with auto-expand on check |
 | ✅ | Configurable confidence bands (±1σ, ±2σ, custom percentiles) |
 | ✅ | Binance historic price data (batched fetch, stale-cache detection, manual refresh) |
@@ -52,9 +52,15 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 | ✅ | Reactive model overlay on the chart — no "Run" button needed |
 | ✅ | Light / dark theme with system preference detection |
 | ✅ | Mobile-first responsive design (usable at 375px) |
-| ✅ | Parameter input panel — BTC holdings, spend floor + desired spend, retirement timeline, persisted to localStorage |
+| ✅ | Parameter input panel — BTC holdings, spend floor + desired spend, inflation rate, retirement timeline, persisted to localStorage |
+| ✅ | Unified withdrawal policy engine (Rust/WASM) — Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom presets over a shared knob set |
+| ✅ | Deterministic withdrawal engine — yearly/monthly stepping, inflation referencing, Guyton-Klinger guardrails with prosperity rule, valuation phases (bear/fair/euphoria) with cash buffer, safety valve, and deferred onboarding |
+| ✅ | Band-path simulation — the plan runs each visible model's median, ±1σ, ±2σ, and percentile paths; S2F and Bitcoin24 emit ±2σ bands |
+| ✅ | Plan results — year-by-year BTC/cash/spend per path (cards on mobile, table on desktop), single plan-model selector, directional path tiles (Medium/Bearish/Bullish) with per-path outcomes |
+| ✅ | Collapsible Plan Configuration card with tabs (Price model · Scenario · Withdrawal) — chart-first layout, no sidebar |
+| ✅ | Withdrawal tab — preset cards with dirty marker and knob visibility rules (guardrails/valuation/buffer knobs hidden when off) |
+| ✅ | Withdrawal policy persisted to localStorage (versioned key), inflation rate with storage migration |
 | ✅ | Full test suite: Rust unit tests + React component tests + integration |
-| 🚧 | Unified withdrawal policy engine with presets — Classic FIRE, Fixed %, Guardrails, Valuation-based (Phase 7) |
 | 🚧 | Monte Carlo engine and results dashboard (Phase 9–10) |
 | 🚧 | Buy-Borrow-Die preset with loan modes (Phase 12) |
 | 🚧 | Scenario comparison (Phase 13) |
@@ -240,7 +246,7 @@ New changes are managed with the **OpenSpec** workflow: each change lives in `op
 | 4 | Stock-to-Flow price model | ✅ Done |
 | 5 | Bitcoin24 price model | ✅ Done |
 | 6 | User stack configuration (parameter panel) | ✅ Done |
-| 7 | Unified withdrawal policy (presets: Classic FIRE, Fixed %, Guardrails, Valuation-based) | 🚧 Planned |
+| 7 | Unified withdrawal policy (presets: Classic FIRE, Fixed %, Guardrails, Valuation-based) | ✅ Done |
 | 8 | Fixed % strategy | Merged into 7 |
 | 9–10 | Monte Carlo engine + Results dashboard | 🚧 Planned |
 | 11 | Guardrails strategy | Merged into 7 |

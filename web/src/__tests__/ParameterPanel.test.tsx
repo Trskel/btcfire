@@ -87,7 +87,7 @@ describe('ParameterInput', () => {
 })
 
 describe('ParameterPanel', () => {
-  it('renders all six fields with default values', () => {
+  it('renders all seven fields with default values', () => {
     renderPanel()
 
     expect(screen.getByText('Initial BTC holdings')).toBeInTheDocument()
@@ -96,10 +96,26 @@ describe('ParameterPanel', () => {
     expect(screen.getByText('Expected lifespan')).toBeInTheDocument()
     expect(screen.getByText('Minimum annual spending')).toBeInTheDocument()
     expect(screen.getByText('Desired annual spending')).toBeInTheDocument()
+    expect(screen.getByText('Annual inflation rate')).toBeInTheDocument()
 
     expect(screen.getByText('1 BTC')).toBeInTheDocument()
     expect(screen.getByText('$50,000')).toBeInTheDocument()
+    expect(screen.getByText('3.0%')).toBeInTheDocument()
 
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(7)
+  })
+
+  it('hides the inflation field when showInflation is false', () => {
+    const onChange = vi.fn()
+    render(
+      <ParameterPanel
+        params={defaultSimulationParams()}
+        onParamChange={onChange}
+        showInflation={false}
+      />,
+    )
+
+    expect(screen.queryByText('Annual inflation rate')).not.toBeInTheDocument()
     expect(screen.getAllByRole('spinbutton')).toHaveLength(6)
   })
 
