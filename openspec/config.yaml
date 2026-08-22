@@ -22,7 +22,9 @@ context: |
   - Monorepo: `wasm/` (Rust crate, wasm-pack + wasm-bindgen + serde + rand) and
     `web/` (React + TypeScript + Vite + Tailwind + shadcn/ui + ECharts).
   - WASM integration via `vite-plugin-wasm` + `vite-plugin-top-level-await`.
-  - Historic BTC prices from CoinGecko free tier, cached in localStorage with 24h TTL.
+  - Historic BTC prices from Binance's public klines API (BTCUSDT, 1d interval,
+    batched 1000 candles per request, proxied via the Vite dev server), cached
+    in localStorage with 24h TTL and stale-cache fallback.
   - Rust code layout: `wasm/src/models/` (price models), `wasm/src/strategies/`
     (withdrawal strategies), `wasm/src/simulation/` (Monte Carlo), `wasm/src/data/`
     (PricePoint type).
@@ -37,12 +39,14 @@ context: |
   - Light/dark themes via CSS custom properties (shadcn pattern), persisted in
     localStorage.
 
-  ## Spec history (manual phase specs)
-  The `specs/` directory holds the pre-OpenSpec project constitution:
-  `specs/mission.md`, `specs/roadmap.md`, `specs/tech-stack.md`, and per-phase
-  folders with requirements/plan/validation for phases 1–4. The roadmap's
-  remaining phases (6–15) are the backlog; each becomes an OpenSpec change
-  proposal when work on it starts.
+  ## Spec history
+  Phases 1–6 are built and have requirement specs in `openspec/specs/`
+  (project-scaffold, historic-price-data, power-law-price-model,
+  s2f-price-model, bitcoin24-price-model, sim-parameters). Phases 1–4 also have
+  the original manual specs in `specs/` (requirements/plan/validation per phase)
+  plus the constitution files `specs/mission.md`, `specs/roadmap.md`,
+  `specs/tech-stack.md`. The roadmap's remaining phases (7–15) are the backlog;
+  each becomes an OpenSpec change proposal when work on it starts.
 
 # Per-artifact rules (optional)
 # rules:

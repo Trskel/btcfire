@@ -2,29 +2,45 @@
 
 Each phase is roughly half a day of work and delivers a testable result. All UI work follows a mobile-first responsive approach — features are designed for phone screens first, then enhanced for larger viewports.
 
+**Status legend:** phases 1–6 are done with requirement specs in `openspec/specs/` (1–4 also have manual specs in `specs/`); phases 7–15 are the backlog.
+
 ## Phase 1 — Project scaffold
 
 Set up the monorepo structure: Rust/WASM crate with `wasm-pack`, React/Vite app with Tailwind and shadcn/ui, and the build pipeline that wires them together. The app uses mobile-first responsive layout from the start. Configure Vitest for the React app and `wasm-pack test` for Rust. Deliverable: a "Hello from WASM" message rendered in the React app with a responsive layout that works on phone-sized screens, plus passing test suites for both Rust and React (`npm test` runs both).
 
+**Status:** ✅ done — `openspec/specs/project-scaffold`, `specs/2026-05-15-project-scaffold`
+
 ## Phase 2 — Historic price data
 
-Fetch historic BTC price data from a free public API (CoinGecko). Cache in localStorage. Display the price history as a responsive interactive Recharts line chart (log/linear toggle) that adapts to screen width — simplified axis labels and touch-friendly tooltips on mobile. Deliverable: a chart showing BTC's full price history from the API, usable on both phone and desktop screens.
+Fetch historic BTC price data from Binance's public klines API (batched daily candles back to genesis). Cache in localStorage. Display the price history as a responsive interactive ECharts line chart (log/linear toggle) that adapts to screen width — simplified axis labels and touch-friendly tooltips on mobile. Deliverable: a chart showing BTC's full price history from the API, usable on both phone and desktop screens.
+
+> Note: the original CoinGecko source was dropped because its free tier became rate-capped. The Binance client lives in `web/src/lib/api/coingecko.ts` (filename not yet renamed). Binance data starts 2017-08-17.
+
+**Status:** ✅ done — `openspec/specs/historic-price-data`, `specs/2026-05-16-historic-price-data`
 
 ## Phase 3 — Power Law price model
 
 Implement the Power Law model in Rust. Given a year, return median price and confidence bands. Expose via WASM. Overlay the model's projection onto the historic price chart. Include Rust unit tests validating model output against known reference values. Deliverable: chart shows historic prices + Power Law projection into the future, with passing tests.
 
+**Status:** ✅ done — `openspec/specs/power-law-price-model`, `specs/2026-05-18-power-law-price-model`
+
 ## Phase 4 — S2F price model
 
 Implement Stock-to-Flow model in Rust. Same interface as Power Law. Add a model selector to the UI so users can switch between Power Law and S2F. Include Rust unit tests for S2F calculations. Deliverable: users can toggle between two price models on the chart, with passing tests.
+
+**Status:** ✅ done — `openspec/specs/s2f-price-model`, `specs/2026-05-18-s2f-price-model`
 
 ## Phase 5 — Bitcoin24 price model
 
 Implement MicroStrategy's Bitcoin24 model in Rust. Add to model selector. Include Rust unit tests. Deliverable: three price models available, all comparable on the same chart, with passing tests.
 
+**Status:** ✅ done — `openspec/specs/bitcoin24-price-model` (built 2026-08-21, spec'd via archived change)
+
 ## Phase 6 — User stack configuration
 
 Build the parameter input panel: initial BTC holdings, retirement start year, current age, expected lifespan, annual spending (in fiat). Persist to localStorage. On mobile, the panel is full-width and stacks above the results; on desktop, it renders as a sidebar. All sliders and inputs have touch-friendly sizing (min 44px targets). Deliverable: a responsive parameter panel with sliders and inputs that save across sessions and work on all screen sizes.
+
+**Status:** ✅ done — `openspec/specs/sim-parameters` (built 2026-08-22 via archived change `2026-08-22-add-param-input-panel`). Note: implementation added `minimumSpendUsd` alongside `annualSpendUsd` (floor + desired spend, for future Guardrails support).
 
 ## Phase 7 — Classic FIRE withdrawal strategy
 
