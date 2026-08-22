@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
+import { run_monte_carlo_wasm } from 'btcfire-wasm'
+import type { MonteCarloResult } from '@/types/simulation'
 import App from '../App'
 
 vi.mock('btcfire-wasm', () => ({
@@ -95,6 +97,22 @@ vi.mock('btcfire-wasm', () => ({
         phase: null,
       },
     ]),
+  run_monte_carlo_wasm: vi.fn(() =>
+    Promise.resolve({
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 20.0,
+        belowMinPct: 10.0,
+        successPct: 70.0,
+        desiredSpendPct: 80.0,
+      },
+      percentiles: [],
+      forensics: null,
+      legacy: null,
+      phaseTime: null,
+    }),
+  ),
 }))
 
 vi.mock('@/hooks/useHistoricPrices', () => ({
@@ -120,7 +138,7 @@ vi.mock('echarts/core', () => {
   }
 })
 
-vi.mock('echarts/charts', () => ({ LineChart: {}, CustomChart: {} }))
+vi.mock('echarts/charts', () => ({ BarChart: {}, LineChart: {}, CustomChart: {} }))
 vi.mock('echarts/components', () => ({
   GridComponent: {},
   TooltipComponent: {},
@@ -302,6 +320,69 @@ describe('App', () => {
 
       fireEvent.change(picker, { target: { value: 's2f' } })
       expect(picker.value).toBe('s2f')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('shows the loading spinner while the plan recalculates', async () => {
+    vi.useFakeTimers()
+    let resolveMc!: (value: MonteCarloResult) => void
+    try {
+      render(<App />)
+      await act(async () => {
+        vi.advanceTimersByTime(400)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      await act(async () => {
+        vi.advanceTimersByTime(50)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      expect(screen.getByText('Monte Carlo outcomes')).toBeInTheDocument()
+
+      vi.mocked(run_monte_carlo_wasm).mockImplementationOnce(
+        () =>
+          new Promise<MonteCarloResult>((resolve) => {
+            resolveMc = resolve
+          }),
+      )
+
+      fireEvent.change(screen.getByRole('slider'), { target: { value: '40' } })
+      await act(async () => {
+        vi.advanceTimersByTime(400)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      await act(async () => {
+        vi.advanceTimersByTime(50)
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      expect(screen.getByRole('status', { name: 'Running simulation' })).toBeInTheDocument()
+      expect(screen.getByText('Running simulation…')).toBeInTheDocument()
+
+      await act(async () => {
+        resolveMc({
+          runCount: 10000,
+          seed: 42,
+          summary: {
+            runOutPct: 20.0,
+            belowMinPct: 10.0,
+            successPct: 70.0,
+            desiredSpendPct: 80.0,
+          },
+          percentiles: [],
+          forensics: null,
+          legacy: null,
+          phaseTime: null,
+        })
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      expect(screen.queryByText('Running simulation…')).not.toBeInTheDocument()
+      expect(screen.getByText('Monte Carlo outcomes')).toBeInTheDocument()
     } finally {
       vi.useRealTimers()
     }

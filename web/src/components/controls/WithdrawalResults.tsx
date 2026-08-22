@@ -2,6 +2,8 @@ import type { Phase, YearResult } from '@/types/policy'
 import type { BandPathRun, PathId, WithdrawalRun } from '@/lib/withdrawal'
 import { cn } from '@/lib/utils'
 import { InfoButton } from '@/components/ui/info-button'
+import { MonteCarloSummary } from '@/components/controls/MonteCarloSummary'
+import { MonteCarloForensics } from '@/components/controls/MonteCarloForensics'
 import { RESULTS_INFO } from '@/content/info'
 
 interface WithdrawalResultsProps {
@@ -170,6 +172,13 @@ export function WithdrawalResults({
 
   return (
     <div className="space-y-4">
+      {run.totalYears > 0 && (
+        <>
+          <MonteCarloSummary summary={run.monteCarlo?.summary ?? null} />
+          <MonteCarloForensics monteCarlo={run.monteCarlo ?? null} />
+        </>
+      )}
+
       {truncated && (
         <p className="text-xs text-muted-foreground">
           The model projection covers {run.coveredYears} of {run.totalYears}{' '}

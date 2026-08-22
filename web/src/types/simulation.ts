@@ -8,6 +8,74 @@ export interface SimulationParams {
   inflationRate: number
 }
 
+export interface MonteCarloSummary {
+  runOutPct: number
+  belowMinPct: number
+  successPct: number
+  desiredSpendPct: number | null
+}
+
+export interface YearPercentiles {
+  year: number
+  p10: number
+  p25: number
+  p50: number
+  p75: number
+  p90: number
+  spendP10: number
+  spendP25: number
+  spendP50: number
+  spendP75: number
+  spendP90: number
+  bufferYearsP10: number
+  bufferYearsP25: number
+  bufferYearsP50: number
+  bufferYearsP75: number
+  bufferYearsP90: number
+}
+
+export interface SurvivalPoint {
+  year: number
+  survivalPct: number
+}
+
+export interface FailureHistogramPoint {
+  year: number
+  depleted: number
+  belowMin: number
+}
+
+export interface MonteCarloForensics {
+  survivalByYear: SurvivalPoint[]
+  failureHistogram: FailureHistogramPoint[]
+  medianFailureYear: number | null
+  shortfallMedianUsd: number | null
+  shortfallP90Usd: number | null
+}
+
+export interface LegacyStats {
+  finalBtcP10: number
+  finalBtcP50: number
+  finalBtcP90: number
+  successFinalBtcMedian: number | null
+}
+
+export interface PhaseTimeStats {
+  bearPct: number
+  fairPct: number
+  euphoriaPct: number
+}
+
+export interface MonteCarloResult {
+  runCount: number
+  seed: number
+  summary: MonteCarloSummary
+  percentiles: YearPercentiles[]
+  forensics: MonteCarloForensics | null
+  legacy: LegacyStats | null
+  phaseTime: PhaseTimeStats | null
+}
+
 export interface ParamBounds {
   min: number
   max: number

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:wasm": "node ../scripts/build-wasm.mjs",
+    "prebuild": "npm run build:wasm",
     "lint": "eslint .",
     "snapshot:history": "node ../scripts/snapshot-history.mjs",
     "test": "vitest run",

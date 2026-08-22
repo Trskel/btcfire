@@ -1,8 +1,13 @@
-import { run_withdrawal_wasm } from 'btcfire-wasm'
+import { run_monte_carlo_wasm, run_withdrawal_wasm } from 'btcfire-wasm'
 import { ensureWasm } from '@/lib/wasm'
 import type { WithdrawalPolicy, YearResult } from '@/types/policy'
-import type { SimulationParams } from '@/types/simulation'
+import type {
+  MonteCarloResult,
+  SimulationParams,
+} from '@/types/simulation'
 import type { ModelOverlay, ModelPoint } from '@/types/models'
+
+export const MONTE_CARLO_SEED = 42
 
 export type PathId =
   | 'median'
@@ -27,6 +32,7 @@ export interface WithdrawalRun {
   paths: BandPathRun[]
   coveredYears: number
   totalYears: number
+  monteCarlo: MonteCarloResult | null
 }
 
 /** Second-line band descriptor shown under the directional tile name. */
@@ -155,7 +161,14 @@ export async function runWithdrawal(
     })
   }
 
-  return { paths, coveredYears, totalYears }
+  const monteCarlo = (await run_monte_carlo_wasm(
+    policy,
+    effective,
+    medianPoints,
+    MONTE_CARLO_SEED,
+  )) as MonteCarloResult
+
+  return { paths, coveredYears, totalYears, monteCarlo }
 }
 
 export function errorMessage(err: unknown): string {

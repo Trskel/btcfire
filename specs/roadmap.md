@@ -60,6 +60,8 @@ Build the Monte Carlo engine in Rust. Run 1000+ simulations per configuration, a
 
 > Note (2026-08-22): the engine SHALL support resuming simulation from an arbitrary `RuntimeState` (BTC, cash, year, buffer flags) — the "Today" advisor (Phase 15) conditions Monte Carlo runs on the user's real present state. The same `RuntimeState` struct serves simulator paths and the advisor's single real path.
 
+**Status:** ✅ done — implemented 2026-08-22 via OpenSpec change `add-montecarlo-simulation-summary`. 10,000 seeded paths per run; outcomes classified into run-out / below-minimum / success; a four-part summary (run-out %, below-minimum %, success %, desired-spend coverage across success paths) renders at the beginning of the plan results; percentile series computed per year for the Phase 10 fan charts (rendering still pending). Note: the fan-chart visualization deliverable of this phase moves to Phase 10; the engine pieces are all in place.
+
 ## Phase 10 — Results visualization
 
 Display Monte Carlo results as fan charts (percentile bands over time), success rate indicators, and a detailed year-by-year table. Charts use responsive containers that adapt axis density and legend placement to screen width. Tables switch to a card layout on mobile. Add educational tooltips explaining what the numbers mean. Deliverable: a complete, mobile-friendly results dashboard for classic FIRE.

@@ -6,6 +6,35 @@ import { WithdrawalResults } from '@/components/controls/WithdrawalResults'
 import type { PathId, WithdrawalRun } from '@/lib/withdrawal'
 import type { YearResult } from '@/types/policy'
 
+vi.mock('echarts/core', () => {
+  class LinearGradient {}
+  const graphic = { LinearGradient }
+  return {
+    use: vi.fn(),
+    graphic,
+    default: { use: vi.fn(), graphic },
+  }
+})
+
+vi.mock('echarts/charts', () => ({ BarChart: {}, LineChart: {}, CustomChart: {} }))
+vi.mock('echarts/components', () => ({
+  GridComponent: {},
+  TooltipComponent: {},
+  DataZoomComponent: {},
+  ToolboxComponent: {},
+  MarkLineComponent: {},
+}))
+vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
+
+vi.mock('echarts-for-react', async () => {
+  const React = await import('react')
+  return {
+    default: React.forwardRef(function MockECharts() {
+      return <div data-testid="echarts-mock" />
+    }),
+  }
+})
+
 function yearResult(
   year: number,
   btc: number,
@@ -57,6 +86,41 @@ function makeRun(): WithdrawalRun {
     ],
     coveredYears: 2,
     totalYears: 55,
+    monteCarlo: {
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 20.0,
+        belowMinPct: 10.0,
+        successPct: 70.0,
+        desiredSpendPct: 80.0,
+      },
+      percentiles: [],
+      forensics: {
+        survivalByYear: [
+          { year: 2030, survivalPct: 100 },
+          { year: 2031, survivalPct: 70 },
+        ],
+        failureHistogram: [
+          { year: 2030, depleted: 0, belowMin: 0 },
+          { year: 2031, depleted: 2000, belowMin: 1000 },
+        ],
+        medianFailureYear: 2031,
+        shortfallMedianUsd: 5000,
+        shortfallP90Usd: 12000,
+      },
+      legacy: {
+        finalBtcP10: 0.5,
+        finalBtcP50: 1.2,
+        finalBtcP90: 2.5,
+        successFinalBtcMedian: 1.5,
+      },
+      phaseTime: {
+        bearPct: 25,
+        fairPct: 60,
+        euphoriaPct: 15,
+      },
+    },
   }
 }
 
@@ -147,6 +211,19 @@ describe('WithdrawalResults', () => {
     expect(screen.getByText(/No results yet/)).toBeInTheDocument()
   })
 
+  it('shows a loading message while calculating', () => {
+    render(
+      <WithdrawalResults
+        run={null}
+        selectedPathId="median"
+        onSelectPath={vi.fn()}
+        error={null}
+        loading={true}
+      />,
+    )
+    expect(screen.getByText('Running simulation…')).toBeInTheDocument()
+  })
+
   it('shows the error state', () => {
     render(
       <WithdrawalResults
@@ -160,6 +237,90 @@ describe('WithdrawalResults', () => {
     expect(
       screen.getByText('Model projection does not include retirement year 2030'),
     ).toBeInTheDocument()
+  })
+
+  it('renders the Monte Carlo summary first with the four metrics', () => {
+    render(<Harness run={makeRun()} />)
+    const results = screen.getAllByText('70.0%')
+    expect(results.length).toBeGreaterThan(0)
+
+    expect(screen.getByText('Monte Carlo outcomes')).toBeInTheDocument()
+    expect(screen.getByText('Ran out of money')).toBeInTheDocument()
+    expect(screen.getByText('Below minimum spending')).toBeInTheDocument()
+    expect(screen.getByText('Success')).toBeInTheDocument()
+    expect(screen.getByText('Time at desired spend')).toBeInTheDocument()
+    expect(screen.getByText('20.0%')).toBeInTheDocument()
+    expect(screen.getByText('10.0%')).toBeInTheDocument()
+    expect(screen.getByText('80.0%')).toBeInTheDocument()
+
+    const summaryNode = screen.getByText('Monte Carlo outcomes').closest('div')
+    const stripNode = screen.getByRole('group', { name: 'Price paths' })
+    expect(
+      summaryNode!.compareDocumentPosition(stripNode) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('shows an em dash for the desired-spend metric when it is null', () => {
+    const run = makeRun()
+    run.monteCarlo = {
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 100.0,
+        belowMinPct: 0.0,
+        successPct: 0.0,
+        desiredSpendPct: null,
+      },
+      percentiles: [],
+      forensics: {
+        survivalByYear: [
+          { year: 2030, survivalPct: 0 },
+          { year: 2031, survivalPct: 0 },
+        ],
+        failureHistogram: [
+          { year: 2030, depleted: 10000, belowMin: 0 },
+          { year: 2031, depleted: 0, belowMin: 0 },
+        ],
+        medianFailureYear: 2030,
+        shortfallMedianUsd: 20000,
+        shortfallP90Usd: 20000,
+      },
+      legacy: {
+        finalBtcP10: 0,
+        finalBtcP50: 0,
+        finalBtcP90: 0,
+        successFinalBtcMedian: null,
+      },
+      phaseTime: null,
+    }
+    render(<Harness run={run} />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+    expect(screen.queryByText('80.0%')).not.toBeInTheDocument()
+  })
+
+  it('hides the Monte Carlo summary when the horizon is zero', () => {
+    const run = makeRun()
+    run.totalYears = 0
+    render(<Harness run={run} />)
+    expect(screen.queryByText('Monte Carlo outcomes')).not.toBeInTheDocument()
+  })
+
+  it('shows info buttons for each Monte Carlo metric', async () => {
+    const user = userEvent.setup()
+    render(<Harness run={makeRun()} />)
+
+    expect(
+      screen.getByRole('button', { name: 'About Monte Carlo outcomes' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Ran out of money' }),
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Ran out of money' }),
+    )
+    expect(screen.getByText(/stack hit zero/)).toBeInTheDocument()
   })
 
   it('shows info buttons for price paths and the phase column', async () => {
@@ -187,5 +348,127 @@ describe('WithdrawalResults', () => {
     expect(
       screen.getByRole('button', { name: /Medium/ }).getAttribute('aria-pressed'),
     ).toBe('true')
+  })
+
+  function makeNoFailuresRun(): WithdrawalRun {
+    const run = makeRun()
+    run.monteCarlo = {
+      runCount: 10000,
+      seed: 42,
+      summary: {
+        runOutPct: 0.0,
+        belowMinPct: 0.0,
+        successPct: 100.0,
+        desiredSpendPct: 90.0,
+      },
+      percentiles: [],
+      forensics: {
+        survivalByYear: [
+          { year: 2030, survivalPct: 100 },
+          { year: 2031, survivalPct: 100 },
+        ],
+        failureHistogram: [
+          { year: 2030, depleted: 0, belowMin: 0 },
+          { year: 2031, depleted: 0, belowMin: 0 },
+        ],
+        medianFailureYear: null,
+        shortfallMedianUsd: null,
+        shortfallP90Usd: null,
+      },
+      legacy: {
+        finalBtcP10: 1.0,
+        finalBtcP50: 2.0,
+        finalBtcP90: 3.0,
+        successFinalBtcMedian: 2.0,
+      },
+      phaseTime: {
+        bearPct: 20,
+        fairPct: 60,
+        euphoriaPct: 20,
+      },
+    }
+    return run
+  }
+
+  it('renders the forensics section below the summary and above the price paths', () => {
+    render(<Harness run={makeRun()} />)
+    expect(screen.getByText('Failure forensics')).toBeInTheDocument()
+
+    const summaryNode = screen.getByText('Monte Carlo outcomes').closest('div')
+    const forensicsNode = screen.getByText('Failure forensics').closest('div')
+    const stripNode = screen.getByRole('group', { name: 'Price paths' })
+    expect(
+      summaryNode!.compareDocumentPosition(forensicsNode!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      forensicsNode!.compareDocumentPosition(stripNode) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('renders failure forensics tiles and legacy stats', () => {
+    render(<Harness run={makeRun()} />)
+    expect(screen.getByText('Survival rate')).toBeInTheDocument()
+    expect(screen.getByText('Failure years')).toBeInTheDocument()
+    expect(screen.getByText('Median failure year')).toBeInTheDocument()
+    expect(screen.getAllByText('2031').length).toBeGreaterThan(0)
+    expect(screen.getByText('$5,000')).toBeInTheDocument()
+    expect(screen.getByText('$12,000')).toBeInTheDocument()
+    expect(screen.getByText('Final BTC median')).toBeInTheDocument()
+    expect(screen.getByText('Success median BTC')).toBeInTheDocument()
+    expect(screen.getByText('Bear years')).toBeInTheDocument()
+    expect(screen.getByText('25.0%')).toBeInTheDocument()
+  })
+
+  it('hides the failure parts when there are no failures', () => {
+    render(<Harness run={makeNoFailuresRun()} />)
+    expect(screen.getByText('Failure forensics')).toBeInTheDocument()
+    expect(screen.queryByText('Survival rate')).not.toBeInTheDocument()
+    expect(screen.queryByText('Failure years')).not.toBeInTheDocument()
+    expect(screen.queryByText('Median failure year')).not.toBeInTheDocument()
+    expect(screen.queryByText('Shortfall median')).not.toBeInTheDocument()
+    expect(screen.getByText('Final BTC median')).toBeInTheDocument()
+    expect(screen.getByText('Bear years')).toBeInTheDocument()
+  })
+
+  it('hides the forensics section when the horizon is zero', () => {
+    const run = makeRun()
+    run.totalYears = 0
+    render(<Harness run={run} />)
+    expect(screen.queryByText('Failure forensics')).not.toBeInTheDocument()
+    expect(screen.queryByText('Final BTC median')).not.toBeInTheDocument()
+  })
+
+  it('shows info buttons for each forensics metric', async () => {
+    const user = userEvent.setup()
+    render(<Harness run={makeRun()} />)
+
+    expect(
+      screen.getByRole('button', { name: 'About Failure forensics' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Survival rate' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Failure years' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Median failure year' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Shortfall median' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Final BTC median' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Bear years' }),
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'About Median failure year' }),
+    )
+    expect(screen.getByText(/middle failure year/)).toBeInTheDocument()
   })
 })
