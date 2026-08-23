@@ -13,6 +13,8 @@ import { CanvasRenderer } from 'echarts/renderers'
 import type { PricePoint } from '@/types/price'
 import type { ModelOverlay } from '@/types/models'
 import { MODEL_COLORS, MODEL_LABELS } from '@/types/models'
+import { formatTooltip } from '@/components/charts/tooltip'
+import type { TooltipParam } from '@/components/charts/tooltip'
 import { Button } from '@/components/ui/button'
 
 echarts.use([
@@ -233,10 +235,6 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
       }
     }
 
-    const axisPointerSeries = series
-      .filter((s) => typeof s.name === 'string' && (s.name as string).endsWith('±1σ'))
-      .map((s) => s.name as string)
-
     return {
       grid: {
         left: 60,
@@ -275,36 +273,10 @@ export function PriceChart({ data, modelOverlays = [] }: PriceChartProps) {
       series,
       tooltip: {
         trigger: 'axis' as const,
-        formatter: (params: { seriesName?: string; value: [number, number] }[]) => {
-          if (!params || params.length === 0) return ''
-          const items = params.filter(
-            (p) => {
-              const name = p.seriesName || ''
-              return (
-                name === 'BTC Price' ||
-                name.endsWith(' Median') ||
-                name.endsWith('±1σ') ||
-                name.endsWith('±2σ')
-              )
-            },
-          )
-          if (items.length === 0) return ''
-          const date = new Date(items[0].value[0]).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          })
-          let html = `${date}<br/>`
-          for (const item of items) {
-            const [, v] = item.value
-            const price = logScale ? Math.pow(10, v) : v
-            html += `${item.seriesName}: <strong>$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong><br/>`
-          }
-          return html
-        },
+        formatter: (params: TooltipParam[]) =>
+          formatTooltip(params, modelOverlays, logScale),
         axisPointer: {
           type: 'cross' as const,
-          ...(axisPointerSeries.length > 1 ? { link: [{ xAxisIndex: 'all' }] } : {}),
         },
       },
       dataZoom: [

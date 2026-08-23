@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { InfoButton } from '@/components/ui/info-button'
 
@@ -45,6 +45,40 @@ describe('InfoButton', () => {
     expect(
       screen.getByText('The amount of bitcoin you hold today.'),
     ).toBeInTheDocument()
+  })
+
+  it('opens on hover without a click', async () => {
+    const user = userEvent.setup()
+    renderButton()
+
+    await user.hover(
+      screen.getByRole('button', { name: 'About Initial BTC holdings' }),
+    )
+
+    expect(
+      await screen.findByText('The amount of bitcoin you hold today.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Initial BTC holdings' }),
+    ).toBeInTheDocument()
+  })
+
+  it('closes when the pointer leaves after a hover-open', async () => {
+    const user = userEvent.setup()
+    renderButton()
+
+    const trigger = screen.getByRole('button', {
+      name: 'About Initial BTC holdings',
+    })
+    await user.hover(trigger)
+    await screen.findByText('The amount of bitcoin you hold today.')
+
+    await user.unhover(trigger)
+    await waitFor(() =>
+      expect(
+        screen.queryByText('The amount of bitcoin you hold today.'),
+      ).not.toBeInTheDocument(),
+    )
   })
 
   it('closes on a second click of the trigger', async () => {
