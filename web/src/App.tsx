@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTab, TabsPanel } from '@/components/ui/tabs'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PriceChart } from '@/components/charts/PriceChart'
 import { PowerLawControls } from '@/components/controls/PowerLawControls'
@@ -35,7 +35,7 @@ const PAINT_YIELD_MS = 50
 
 function App() {
   const { data, isLoading, error, isStale, refresh } = useHistoricPrices()
-  const { params: simParams, setParam: setSimParam } = useSimulationParams()
+  const { params: simParams, setParam: setSimParam, resetParams: resetSimParams } = useSimulationParams()
   const { policy, dirty, setPreset, updatePolicy } = useWithdrawalPolicy()
   const [controlsOpen, setControlsOpen] = useState(true)
   const [activeTab, setActiveTab] = useState<ControlTab>('scenario')
@@ -88,6 +88,11 @@ function App() {
   const handleToggleExpand = useCallback((modelId: ModelId) => {
     setExpandedModel((prev) => (prev === modelId ? null : modelId))
   }, [])
+
+  const resetScenarioTab = useCallback(() => {
+    resetSimParams()
+    setProjectionYears(30)
+  }, [resetSimParams])
 
   const visibleOverlays = useMemo(() => {
     return Object.entries(modelOverlays)
@@ -310,6 +315,18 @@ function App() {
                 </TabsPanel>
 
                 <TabsPanel value="scenario">
+                  <div className="mb-3 flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[36px]"
+                      aria-label="Reset scenario tab"
+                      onClick={resetScenarioTab}
+                    >
+                      <RotateCcw />
+                      Reset
+                    </Button>
+                  </div>
                   <div className="mb-4">
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">
                       Projection Horizon: {projectionYears}y

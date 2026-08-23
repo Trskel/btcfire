@@ -149,4 +149,35 @@ describe('useSimulationParams', () => {
     expect(stored.params.holdingsBtc).toBe(3)
     expect(stored.params.currentAge).toBe(40)
   })
+
+  it('resetParams restores defaults', () => {
+    const { result } = renderHook(() => useSimulationParams())
+
+    act(() => result.current.setParam('holdingsBtc', 7))
+    act(() => result.current.setParam('annualSpendUsd', 300000))
+
+    act(() => result.current.resetParams())
+
+    expect(result.current.params).toEqual({
+      holdingsBtc: 1,
+      retirementStartYear: new Date().getFullYear(),
+      currentAge: 35,
+      lifespan: 90,
+      minimumSpendUsd: 20000,
+      annualSpendUsd: 50000,
+      inflationRate: 3,
+    })
+  })
+
+  it('resetParams clears stored parameters', () => {
+    localStorage.setItem(
+      SIM_PARAMS_STORAGE_KEY,
+      JSON.stringify({ version: 1, params: { holdingsBtc: 2.5, currentAge: 42 } }),
+    )
+    const { result } = renderHook(() => useSimulationParams())
+    expect(result.current.params.holdingsBtc).toBe(2.5)
+
+    act(() => result.current.resetParams())
+    expect(localStorage.getItem(SIM_PARAMS_STORAGE_KEY)).toBeNull()
+  })
 })

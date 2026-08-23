@@ -71,5 +71,14 @@ export function useSimulationParams() {
     [],
   )
 
-  return { params, setParam }
+  const resetParams = useCallback(() => {
+    try {
+      localStorage.removeItem(SIM_PARAMS_STORAGE_KEY)
+    } catch {
+      // localStorage unavailable
+    }
+    setParams(defaultSimulationParams())
+  }, [])
+
+  return { params, setParam, resetParams }
 }

@@ -47,6 +47,21 @@ The system SHALL persist the parameter set to localStorage under a versioned key
 - **WHEN** the stored JSON is missing, unparsable, or has an unknown version
 - **THEN** the app falls back to default parameter values without crashing
 
+### Requirement: Scenario tab reset
+The Scenario tab SHALL render a Reset button that restores the full parameter set to its documented defaults (1 BTC holdings, retirement start year = current year, current age 35, lifespan 90, minimum annual spending 20,000, desired annual spending 50,000, inflation rate 3.0%) and the projection horizon to 30 years. It SHALL also clear the persisted parameter set from localStorage so a reload starts from defaults.
+
+#### Scenario: Reset restores default parameters and horizon
+- **WHEN** the user edits simulation parameters and the projection horizon, then clicks Reset in the Scenario tab
+- **THEN** every parameter field shows its default value and the projection horizon shows 30 years
+
+#### Scenario: Reset discards in-progress text edits
+- **WHEN** the user has typed a value into a parameter field without blurring it, then clicks Reset in the Scenario tab
+- **THEN** the field shows the default value rather than the uncommitted text
+
+#### Scenario: Reset clears persisted parameters
+- **WHEN** the user clicks Reset in the Scenario tab and reloads the app
+- **THEN** the parameter panel shows the default parameter set rather than the previously customized values
+
 ### Requirement: Responsive panel layout
 The system SHALL render the parameter panel inside a collapsible tabbed control card below the chart on all viewports. The card SHALL expose three tabs: Price model (model selection and controls), Scenario (the parameter panel and the projection horizon), and Withdrawal (withdrawal policy). The chart SHALL render above the control card at every viewport width; there is no sidebar. The plan results SHALL render below the control card.
 

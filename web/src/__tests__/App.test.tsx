@@ -289,6 +289,24 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /^Valuation-based/ })).toBeInTheDocument()
   })
 
+  it('resets the Scenario tab to default parameters and horizon', () => {
+    render(<App />)
+    const holdings = screen.getByRole('spinbutton', {
+      name: 'Initial BTC holdings value',
+    })
+    fireEvent.change(holdings, { target: { value: '3' } })
+    expect(holdings).toHaveValue('3')
+    fireEvent.change(screen.getByRole('slider'), { target: { value: '40' } })
+    expect(screen.getByText('Projection Horizon: 40y')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset scenario tab' }))
+
+    expect(screen.getByText('Projection Horizon: 30y')).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: 'Initial BTC holdings value' }),
+    ).toHaveValue('1')
+  })
+
   it('renders the plan results card', () => {
     render(<App />)
     expect(screen.getByText('Your Plan')).toBeInTheDocument()

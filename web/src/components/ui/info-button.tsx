@@ -22,6 +22,7 @@ export function InfoButton({
     <Popover.Trigger
       ref={triggerRef}
       type="button"
+      openOnHover
       aria-label={`About ${label}`}
       className={cn(
         'relative inline-flex size-[26px] shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground/70 transition-colors outline-none',

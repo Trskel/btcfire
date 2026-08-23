@@ -27,7 +27,18 @@ export function ParameterInput({
   info,
 }: ParameterInputProps) {
   const [draft, setDraft] = useState<string | null>(null)
+  const [lastValue, setLastValue] = useState(value)
   const id = useId()
+
+  if (value !== lastValue) {
+    setLastValue(value)
+    if (draft !== null) {
+      const parsed = parseFloat(draft)
+      if (!Number.isFinite(parsed) || clamp(parsed, min, max) !== value) {
+        setDraft(null)
+      }
+    }
+  }
 
   const commitDraft = useCallback(
     (raw: string) => {
