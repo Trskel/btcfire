@@ -22,7 +22,7 @@ vi.mock('echarts/components', () => ({
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
-vi.mock('echarts-for-react', async () => {
+vi.mock('echarts-for-react/lib/core', async () => {
   const React = await import('react')
   return {
     default: React.forwardRef(function MockECharts(props: { option?: unknown }) {

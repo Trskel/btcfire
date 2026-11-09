@@ -40,13 +40,15 @@ context: |
     localStorage.
 
   ## Spec history
-  Phases 1–6 are built and have requirement specs in `openspec/specs/`
+  Phases 1–11 are built and have requirement specs in `openspec/specs/`
   (project-scaffold, historic-price-data, power-law-price-model,
-  s2f-price-model, bitcoin24-price-model, sim-parameters). Phases 1–4 also have
-  the original manual specs in `specs/` (requirements/plan/validation per phase)
-  plus the constitution files `specs/mission.md`, `specs/roadmap.md`,
-  `specs/tech-stack.md`. The roadmap's remaining phases (7–15) are the backlog;
-  each becomes an OpenSpec change proposal when work on it starts.
+  s2f-price-model, bitcoin24-price-model, sim-parameters, withdrawal-policy,
+  monte-carlo-simulation, results-visualization, info-buttons, deployment). Phases 1–4 also
+  have the original manual specs in `specs/` (requirements/plan/validation per
+  phase) plus the constitution files `specs/mission.md`, `specs/roadmap.md`,
+  `specs/tech-stack.md`.   Phase 12 (deployment and build optimization) is done; phases 13–17 are
+  the backlog (18 is a candidate). Each becomes an OpenSpec change proposal when
+  work on it starts.
 
 # Per-artifact rules (optional)
 # rules:

@@ -2,7 +2,7 @@
 
 Each phase is roughly half a day of work and delivers a testable result. All UI work follows a mobile-first responsive approach — features are designed for phone screens first, then enhanced for larger viewports.
 
-**Status legend:** phases 1–6 are done with requirement specs in `openspec/specs/` (1–4 also have manual specs in `specs/`); phases 7–17 are the backlog (18 is a candidate).
+**Status legend:** phases 1–12 are done with requirement specs in `openspec/specs/` (1–4 also have manual specs in `specs/`); phases 13–17 are the backlog (18 is a candidate).
 
 > **Product vision (2026-08-22):** BTCFire has two faces over one core — a **planner** (define a withdrawal policy, simulate survival) and an **advisor** ("Today": what does my policy prescribe this month, and what would deviating cost?). Both run on the same policy struct; the simulator clones its runtime state across 10,000 paths, the advisor holds exactly one real path in localStorage. Two top-level sections — **Plan** (three tabs: Scenario · Price model · Withdrawal, results live under the chart) and **Today** (the advisor). See mission.md "The two faces".
 
@@ -58,7 +58,7 @@ Implement the classic FIRE withdrawal strategy in Rust: the user sets an initial
 
 Build the Monte Carlo engine in Rust. Run 1000+ simulations per configuration, adding randomness around the selected price model's projections. Return percentile distributions. Include Rust tests: deterministic seed produces reproducible results, percentile calculations are correct, edge cases (zero holdings, single-year retirement) handled. Deliverable: results show success rate (% of simulations where funds last the full retirement) and percentile bands, with passing tests.
 
-> Note (2026-08-22): the engine SHALL support resuming simulation from an arbitrary `RuntimeState` (BTC, cash, year, buffer flags) — the "Today" advisor (Phase 15) conditions Monte Carlo runs on the user's real present state. The same `RuntimeState` struct serves simulator paths and the advisor's single real path.
+> Note (2026-08-22): the engine SHALL support resuming simulation from an arbitrary `RuntimeState` (BTC, cash, year, buffer flags) — the "Today" advisor (Phase 16) conditions Monte Carlo runs on the user's real present state. The same `RuntimeState` struct serves simulator paths and the advisor's single real path.
 
 **Status:** ✅ done — implemented 2026-08-22 via OpenSpec change `add-montecarlo-simulation-summary`. 10,000 seeded paths per run; outcomes classified into run-out / below-minimum / success; a four-part summary (run-out %, below-minimum %, success %, desired-spend coverage across success paths) renders at the beginning of the plan results; percentile series computed per year for the Phase 10 fan charts (rendering still pending). Note: the fan-chart visualization deliverable of this phase moves to Phase 10; the engine pieces are all in place.
 
@@ -66,23 +66,33 @@ Build the Monte Carlo engine in Rust. Run 1000+ simulations per configuration, a
 
 Display Monte Carlo results as fan charts (percentile bands over time), success rate indicators, and a detailed year-by-year table. Charts use responsive containers that adapt axis density and legend placement to screen width. Tables switch to a card layout on mobile. Add educational tooltips explaining what the numbers mean. Deliverable: a complete, mobile-friendly results dashboard for classic FIRE.
 
+**Status:** ✅ done — `openspec/specs/results-visualization` (built 2026-08-23 via OpenSpec change `results-dashboard-fan-charts`). Fan charts with the BTC/spend/buffer metric toggle, year-by-year distribution table/cards, and educational tooltips all ship; outcome reports and forensics landed in the same cycle.
+
 ## Phase 11 — Guardrails withdrawal strategy
 
 > Merged into Phase 7 (see revision note). Guardrails become knobs (floor/ceiling thresholds, adjustment size, prosperity rule) within the unified policy.
 
-## Phase 12 — Buy-Borrow-Die strategy
+## Phase 12 — Deployment and build optimization
+
+> **Reordered (2026-11-09):** deployment was promoted from the end of the roadmap to Phase 12, and every later phase shifted down by one. PWA/offline support and Monte Carlo performance profiling moved to Phase 15 (Polish and education).
+
+Set up deployment to Cloudflare Pages and optimize the production bundle: vendor code splitting, lazy-loading the ECharts-heavy charts, and using ECharts' modular core instead of the full package. Deliverable: live, publicly accessible app whose first load omits the charting library.
+
+**Status:** ✅ done (2026-11-09) — https://btcfire.pages.dev. Cloudflare Pages project, Wrangler deploy script, static headers, and a GitHub Actions deploy workflow. Bundle work: `echarts`/`react` vendor chunks, lazy-loaded `PriceChart`/forensics/fan chart, modular `echarts/core` + `echarts-for-react/lib/core` (ECharts chunk 1.12 MB → 626 kB, and off the critical path).
+
+## Phase 13 — Buy-Borrow-Die strategy
 
 > Note (2026-08-22): BBD does not fit the shared knob set — it adds liability state (loan balance, LTV, interest, repayment mode) alongside asset state. It becomes a 4th preset with its own knob schema in the same tabs UI.
 
 Implement buy-borrow-die in Rust: borrow against BTC holdings instead of selling, with configurable LTV ratios and interest rates. The user can configure the loan repayment mode: (a) **amortized loan** — the loan must be repaid over a configurable period (e.g., 5, 10, 20 years), with principal + interest payments deducted each year; or (b) **rolling line of credit** — interest-only payments, the principal rolls over indefinitely and is never repaid (or repaid from estate). Add to strategy selector. Include Rust tests for both loan modes (amortization schedule, interest accrual, LTV liquidation boundary). Deliverable: four withdrawal strategies available and comparable, with loan mode toggle in the BBD configuration panel, with passing tests.
 
-## Phase 13 — Scenario comparison
+## Phase 14 — Scenario comparison
 
 Allow users to save and compare multiple scenarios side by side (different models, strategies, parameters). Visual overlay on charts with individual toggles. On mobile, scenarios are compared via a swipeable tab interface rather than side-by-side panels. Deliverable: users can run two or more scenarios and see them compared on any screen size.
 
-## Phase 14 — Polish and education
+## Phase 15 — Polish and education
 
-Add onboarding flow for first-time users (optimized for mobile-first tap-through). Expand educational tooltips and explanations for each model and strategy. Add a disclaimer/about section. Final responsive QA pass across phone, tablet, and desktop breakpoints. Deliverable: the app is usable by someone with no prior BTC/FIRE knowledge on any device.
+Add onboarding flow for first-time users (optimized for mobile-first tap-through). Expand educational tooltips and explanations for each model and strategy. Add a disclaimer/about section. Final responsive QA pass across phone, tablet, and desktop breakpoints. Also (moved from Phase 12): add PWA/offline support — a web manifest plus a service worker that caches the app shell, WASM, fonts, and bundled price history — and profile the 10,000-path Monte Carlo run (WASM compute vs. JS↔WASM serialization) to keep results sub-second. Deliverable: the app is usable by someone with no prior BTC/FIRE knowledge on any device, and installable/usable offline.
 
 > Tooltip design decisions (captured 2026-08-22 during withdrawal-policy exploration):
 > - Info buttons on every parameter (knobs, presets, and section headers), **tap-or-hover** — hover doesn't exist on touch, so the icon is a real button; Base UI tooltip/popover + `lucide-react` Info icon, keyboard focusable, no new dependencies (`@base-ui/react` already in stack).
@@ -91,17 +101,13 @@ Add onboarding flow for first-time users (optimized for mobile-first tap-through
 > - Icons **always visible but muted** (discoverability on touch; no hover-reveal on mobile).
 > - Small ~16px glyph with an invisible **44px hit area** to satisfy the touch-target requirement without visual bulk.
 
-## Phase 15 — Today: the advisor (in-retirement mode)
+## Phase 16 — Today: the advisor (in-retirement mode)
 
 The "Today" top-level section. Monthly check-in ritual (no server, no push — "N days since last check-in" nudge instead). The user manually enters their current state (BTC balance, cash buffer, years in retirement, current base expense); the app computes market state from live data it already has (current price, Mayer Multiple via 200-day SMA from cached history + live tail, Power Law quantile from model bands). The advisor evaluates the active policy against the measured state: prescribed monthly action (drip, buffer action, extra sales) plus "what if" deviation scoring — mini Monte Carlo runs conditioned on today's state, reporting Δ survival rate and Δ worst case. Engine resumes from `RuntimeState` (see Phase 9 note). Deliverable: a retiree opens the app once a month and knows what their plan says to do, in the plan's own language.
 
-## Phase 16 — Steer: conditional planning and ratchet
+## Phase 17 — Steer: conditional planning and ratchet
 
 Conditional decision trees around the present ("if M crosses 2.4, your action is full buffer recharge"). Lifestyle ratchet events: re-simulate conditioned on today's state with a proposed new base expense (per the valuation-based strategy's ratchet rule). Regime-aware Monte Carlo: condition future price draws on the current valuation quantile (v2 of the advisor's scoring fidelity). Deliverable: users can plan around near-term market conditions, not only unconditional long-run distributions.
-
-## Phase 17 — Deployment and optimization
-
-Production build optimization (WASM size, code splitting). Set up deployment to Vercel or GitHub Pages. Add PWA support for offline use. Performance profiling of Monte Carlo runs. Deliverable: live, publicly accessible app with sub-second simulation times.
 
 ## Phase 18 (candidate, unscheduled) — Taxes
 
