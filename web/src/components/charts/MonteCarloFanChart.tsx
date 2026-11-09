@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import ReactEChartsCore from 'echarts-for-react'
+import ReactEChartsCore from 'echarts-for-react/lib/core'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {

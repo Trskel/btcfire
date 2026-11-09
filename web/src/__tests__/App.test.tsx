@@ -149,7 +149,7 @@ vi.mock('echarts/components', () => ({
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
-vi.mock('echarts-for-react', async () => {
+vi.mock('echarts-for-react/lib/core', async () => {
   const React = await import('react')
   return {
     default: React.forwardRef(function MockECharts() {
@@ -163,11 +163,11 @@ function openTab(name: string) {
 }
 
 describe('App', () => {
-  it('renders the heading and price chart', () => {
+  it('renders the heading and price chart', async () => {
     render(<App />)
     expect(screen.getByText('BTCFire')).toBeInTheDocument()
     expect(screen.getByText('BTC Price History')).toBeInTheDocument()
-    expect(screen.getByTestId('echarts-mock')).toBeInTheDocument()
+    expect(await screen.findByTestId('echarts-mock')).toBeInTheDocument()
   })
 
   it('shows data count in description', () => {

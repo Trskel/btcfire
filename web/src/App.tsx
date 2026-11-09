@@ -1,10 +1,9 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardAction } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTab, TabsPanel } from '@/components/ui/tabs'
 import { ChevronDown, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { PriceChart } from '@/components/charts/PriceChart'
 import { PowerLawControls } from '@/components/controls/PowerLawControls'
 import { S2FControls } from '@/components/controls/S2FControls'
 import { Bitcoin24Controls } from '@/components/controls/Bitcoin24Controls'
@@ -26,6 +25,12 @@ import type { WithdrawalPolicy } from '@/types/policy'
 import type { SimulationParams } from '@/types/simulation'
 import { MODEL_LABELS } from '@/types/models'
 import { MODEL_INFO } from '@/content/info'
+
+const PriceChart = lazy(() =>
+  import('@/components/charts/PriceChart').then((m) => ({
+    default: m.PriceChart,
+  })),
+)
 
 type ControlTab = 'scenario' | 'price-model' | 'withdrawal'
 
@@ -260,7 +265,15 @@ function App() {
               </div>
             )}
             {data && (
-              <PriceChart data={data} modelOverlays={visibleOverlays} />
+              <Suspense
+                fallback={
+                  <div className="flex h-[400px] items-center justify-center">
+                    <Spinner />
+                  </div>
+                }
+              >
+                <PriceChart data={data} modelOverlays={visibleOverlays} />
+              </Suspense>
             )}
           </CardContent>
         </Card>

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-09 — Cloudflare Pages deployment and bundle optimization (Phase 12)
+
+- Deploy the static build to Cloudflare Pages: https://btcfire.pages.dev (project `btcfire`)
+- Add `web/wrangler.toml` (Pages project, `dist` output) and `npm run deploy` (WASM + Vite build, then Wrangler upload)
+- Add a GitHub Actions deploy workflow on pushes to `main` and manual dispatch, authenticated with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+- Add `web/public/_headers` — nosniff, frame denial, referrer/permissions policies, and immutable one-year caching for hashed `/assets/*`
+- Fix the production CSP: `connect-src` now allows `https://api.binance.com` instead of the retired CryptoCompare host
+- Split the bundle into `echarts` and `react` vendor chunks and lazy-load `PriceChart`, the forensics charts, and the Monte Carlo fan chart, so ECharts is off the first-load path
+- Switch chart imports to ECharts' modular core (`echarts/core` + specific charts/components) and `echarts-for-react/lib/core`, dropping the full-package import — ECharts chunk 1.12 MB → 626 kB (367 kB → 208 kB gzipped); first-load JS is now entry + React only
+- Regression fix found during the split: `PriceChart` now registers `LegendComponent` explicitly (it previously relied on the full ECharts package)
+- Reorder the roadmap: deployment is now Phase 12; Buy-Borrow-Die, Scenario comparison, Polish, Today, and Steer become Phases 13–17; Taxes stays Phase 18. PWA/offline support and Monte Carlo profiling move to Phase 15
+
 ## 2026-08-23 — Monte Carlo outcome reports: failure forensics, legacy stats, phase time
 
 - Failure event model: each simulated path records a (year, mode) failure event — depleted in the first zero-BTC year, below-minimum in the first below-floor year; precedence and summary numbers unchanged from the existing classification

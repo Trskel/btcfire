@@ -119,6 +119,26 @@ export default defineConfig({
     },
     mainFields: ['browser', 'module', 'jsnext:main', 'jsnext', 'main'],
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'echarts',
+              test: /node_modules[\\/](echarts|zrender)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],

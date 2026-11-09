@@ -20,7 +20,7 @@ vi.mock('echarts/components', () => ({
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
-vi.mock('echarts-for-react', async () => {
+vi.mock('echarts-for-react/lib/core', async () => {
   const React = await import('react')
   return {
     default: React.forwardRef(function MockECharts() {
@@ -68,10 +68,10 @@ function makeResult(): MonteCarloResult {
 }
 
 describe('MonteCarloForensics', () => {
-  it('renders both charts for a run with failures', () => {
+  it('renders both charts for a run with failures', async () => {
     render(<MonteCarloForensics monteCarlo={makeResult()} />)
     expect(screen.getByText('Failure forensics')).toBeInTheDocument()
-    expect(screen.getAllByTestId('echarts-mock')).toHaveLength(2)
+    expect(await screen.findAllByTestId('echarts-mock')).toHaveLength(2)
   })
 
   it('renders null forensics as nothing', () => {

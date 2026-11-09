@@ -27,7 +27,7 @@ vi.mock('echarts/components', () => ({
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
-vi.mock('echarts-for-react', async () => {
+vi.mock('echarts-for-react/lib/core', async () => {
   const React = await import('react')
   return {
     default: React.forwardRef(function MockECharts() {
@@ -494,12 +494,12 @@ describe('WithdrawalResults', () => {
     expect(screen.getByText(/middle failure year/)).toBeInTheDocument()
   })
 
-  it('renders the Monte Carlo visualization between forensics and the price paths', () => {
+  it('renders the Monte Carlo visualization between forensics and the price paths', async () => {
     const run = makeRun()
     run.monteCarlo!.percentiles = makePercentiles(2)
     render(<Harness run={run} />)
 
-    expect(screen.getByText('Year-by-year range')).toBeInTheDocument()
+    expect(await screen.findByText('Year-by-year range')).toBeInTheDocument()
     expect(screen.getByText('Year-by-year distribution')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'BTC holdings' }),

@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
-import ReactEChartsCore from 'echarts-for-react'
+import ReactEChartsCore from 'echarts-for-react/lib/core'
 import * as echarts from 'echarts/core'
-import { LineChart, CustomChart } from 'echarts/charts'
+import { LineChart } from 'echarts/charts'
 import {
   GridComponent,
   TooltipComponent,
   DataZoomComponent,
   ToolboxComponent,
   MarkLineComponent,
+  LegendComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { PricePoint } from '@/types/price'
@@ -19,12 +20,12 @@ import { Button } from '@/components/ui/button'
 
 echarts.use([
   LineChart,
-  CustomChart,
   GridComponent,
   TooltipComponent,
   DataZoomComponent,
   ToolboxComponent,
   MarkLineComponent,
+  LegendComponent,
   CanvasRenderer,
 ])
 

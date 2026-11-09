@@ -16,17 +16,18 @@ vi.mock('echarts/core', () => {
   }
 })
 
-vi.mock('echarts/charts', () => ({ LineChart: {}, CustomChart: {} }))
+vi.mock('echarts/charts', () => ({ LineChart: {} }))
 vi.mock('echarts/components', () => ({
   GridComponent: {},
   TooltipComponent: {},
   DataZoomComponent: {},
   ToolboxComponent: {},
   MarkLineComponent: {},
+  LegendComponent: {},
 }))
 vi.mock('echarts/renderers', () => ({ CanvasRenderer: {} }))
 
-vi.mock('echarts-for-react', async () => {
+vi.mock('echarts-for-react/lib/core', async () => {
   const React = await import('react')
   return {
     default: React.forwardRef(function MockECharts() {

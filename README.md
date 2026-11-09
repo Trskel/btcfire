@@ -1,5 +1,7 @@
 # BTCFire — Bitcoin Retirement Simulator
 
+**Live:** https://btcfire.pages.dev
+
 **Your Bitcoin. Your retirement. Your privacy.** BTCFire simulates retirement scenarios entirely in your browser — deterministic band-path runs plus a 10,000-path Monte Carlo engine with outcome probabilities and failure forensics — so you can model whether a BTC-denominated portfolio can sustain you through retirement. No servers, no accounts, no data leaves your machine.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -32,7 +34,7 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 3. **Define your stack** — BTC holdings, spending (floor + desired), inflation rate, retirement timeline, and the projection horizon.
 4. **Choose a withdrawal policy** — a preset (Classic FIRE, Fixed %, Guardrails, Valuation-based, Custom) over a shared knob set: anchor, rate, inflation, payout/review cadence, guardrails, cash buffer, valuation.
 5. **Run the simulation** — the Rust/WASM engine steps your policy year by year (or month by month) along the selected model's median and band paths, plus a 10,000-path Monte Carlo run seeded for reproducibility, instantly in your browser.
-6. **Explore results** — Monte Carlo summary tiles (% ran out of money, % below minimum, % success, % of years at desired spend) and failure forensics (survival curve, failure-year histogram, shortfall stats), then year-by-year BTC, cash buffer, and spend per path with per-path outcomes (final BTC, depletion year, phase); fan charts arrive in Phase 10.
+6. **Explore results** — Monte Carlo summary tiles (% ran out of money, % below minimum, % success, % of years at desired spend) and failure forensics (survival curve, failure-year histogram, shortfall stats), then year-by-year BTC, cash buffer, and spend per path with per-path outcomes (final BTC, depletion year, phase), plus fan charts and a year-by-year distribution table.
 
 ## ✨ Features (so far)
 
@@ -65,11 +67,13 @@ Two faces, one core: **Plan** lets you define a policy and simulate thousands of
 | ✅ | Monte Carlo outcome summary — % ran out of money, % below minimum, % success, % of years at desired spend (success paths only) |
 | ✅ | Failure forensics — survival curve, failure-year histogram, median failure year, shortfall stats, legacy final-BTC stats, phase-time shares |
 | ✅ | Loading spinner during plan runs |
-| 🚧 | Fan charts for the Monte Carlo percentile series (Phase 10) |
-| 🚧 | Buy-Borrow-Die preset with loan modes (Phase 12) |
-| 🚧 | Scenario comparison (Phase 13) |
-| 🚧 | Today: the advisor — monthly check-in + deviation scoring (Phase 15) |
-| 🚧 | Steer: conditional planning and lifestyle ratchet (Phase 16) |
+| ✅ | Fan charts for the Monte Carlo percentile series (BTC / spend / buffer years) and year-by-year distribution table (Phase 10) |
+| ✅ | Cloudflare Pages deployment — Wrangler config, deploy script, static headers, CI deploy workflow (Phase 12) |
+| ✅ | Optimized production bundle — vendor chunks, lazy-loaded charts, modular ECharts core (ECharts chunk 1.12 MB → 626 kB, off the first-load path) (Phase 12) |
+| 🚧 | Buy-Borrow-Die preset with loan modes (Phase 13) |
+| 🚧 | Scenario comparison (Phase 14) |
+| 🚧 | Today: the advisor — monthly check-in + deviation scoring (Phase 16) |
+| 🚧 | Steer: conditional planning and lifestyle ratchet (Phase 17) |
 
 ## 🔒 Privacy by Design
 
@@ -97,7 +101,7 @@ Monte Carlo retirement modeling requires running thousands of simulations with c
 | **WASM bridge** | wasm-bindgen + serde | Type-safe JS ↔ Rust interop, zero-cost serialization |
 | **Build** | Vite + wasm-pack | Fast HMR, native WASM bundling |
 | **Testing** | Vitest + wasm-pack test | ESM-first testing for both JS and Rust |
-| **Deploy** | Static HTML/CSS/JS/WASM | Vercel or GitHub Pages, zero server cost |
+| **Deploy** | Static HTML/CSS/JS/WASM | Cloudflare Pages, zero server cost |
 
 </div>
 
@@ -180,8 +184,29 @@ cd web && npm run lint
 ```bash
 cd wasm && wasm-pack build --target web && cd ..
 cd web && npm run build
-# Output in web/dist/ — deploy to Vercel, Netlify, or GitHub Pages
+# Output in web/dist/
 ```
+
+### Deployment (Cloudflare Pages)
+
+The app is a static SPA with no backend, deployed to **Cloudflare Pages**.
+
+```bash
+cd web
+npm ci                 # first time only
+npm run deploy         # builds WASM + Vite bundle, then uploads to Cloudflare Pages
+```
+
+`npm run deploy` runs `wrangler pages deploy` using `web/wrangler.toml`
+(project name `btcfire`). Authenticate once with `npx wrangler login`, or export
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for non-interactive deploys.
+
+For automatic deploys, `.github/workflows/deploy.yml` builds the WASM bundle on
+GitHub Actions and deploys on every push to `main`. Add `CLOUDFLARE_API_TOKEN`
+and `CLOUDFLARE_ACCOUNT_ID` as repository secrets.
+
+Security headers are shipped from `web/public/_headers`; the Binance API origin
+is allow-listed in the CSP in `web/index.html`.
 
 ## 📁 Project Structure
 
@@ -253,14 +278,14 @@ New changes are managed with the **OpenSpec** workflow: each change lives in `op
 | 7 | Unified withdrawal policy (presets: Classic FIRE, Fixed %, Guardrails, Valuation-based) | ✅ Done |
 | 8 | Fixed % strategy | Merged into 7 |
 | 9 | Monte Carlo engine + outcome summary + failure forensics | ✅ Done |
-| 10 | Results dashboard — fan charts | 🚧 Planned |
+| 10 | Results dashboard — fan charts | ✅ Done |
 | 11 | Guardrails strategy | Merged into 7 |
-| 12 | Buy-Borrow-Die preset | 🚧 Planned |
-| 13 | Scenario comparison | 🚧 Planned |
-| 14 | Polish and education | 🚧 Planned |
-| 15 | Today: the advisor (in-retirement mode) | 🚧 Planned |
-| 16 | Steer: conditional planning and ratchet | 🚧 Planned |
-| 17 | Deployment and optimization | 🚧 Planned |
+| 12 | Deployment and build optimization (Cloudflare Pages) | ✅ Done |
+| 13 | Buy-Borrow-Die preset | 🚧 Planned |
+| 14 | Scenario comparison | 🚧 Planned |
+| 15 | Polish and education (incl. PWA/offline + Monte Carlo profiling) | 🚧 Planned |
+| 16 | Today: the advisor (in-retirement mode) | 🚧 Planned |
+| 17 | Steer: conditional planning and ratchet | 🚧 Planned |
 | 18 | Taxes | 💭 Candidate |
 
 ## ⚠️ Disclaimer
